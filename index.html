@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Wind by Tanjilchalet</title>
+    
+    <!-- NEW: Meta tags for full-screen "Add to Home Screen" experience on iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Wind App">
+    
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!-- NEW: Add date-fns and the Chart.js adapter for time-series charts -->
+<script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/cdn.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    
+<script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'grass-green': '#10b981', /* Bright Green (Positive/Uphill) */
+                        'fairway-blue': '#3b82f6', /* Lighter Blue (Negative/Downhill) */
+                        'bunker-yellow': '#facc15', /* Yellow */
+                        'dark-gray': '#1f2937',
+                        'card-bg': '#1f2937', /* Deep charcoal for card */
+                        'track-base': '#4b5563', /* Gray-600 */
+                        'track-fill': '#facc15', /* Yellow fill for wind speed (now unused) */
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+        <!-- NEW: Tab Navigation (Visible on mobile, hidden on md screens and up) -->
+        <div id="tab-navigation" class="mb-4 md:hidden">
+            <div class="flex justify-around border-b border-gray-700">
+                <button class="tab-button active w-1/3 py-2 text-sm text-gray-300" data-tab="calculator">Calculator</button>
+                <button class="tab-button w-1/3 py-2 text-sm text-gray-300" data-tab="tracker">Tracker</button>
+                <button class="tab-button w-1/3 py-2 text-sm text-gray-300" data-tab="analysis">Analysis</button>
+            </div>
+        </div>
+
+        <!-- Container for the cards themselves -->
+        <div class="flex flex-wrap justify-center w-full gap-6">
+
+        
+<!-- START CARD 1: WIND CALCULATOR -->
+<!-- UPDATED: Added tab-panel classes and data-panel attribute. Adjusted responsive width. -->
+<div id="calculator-panel" class="tab-panel active md:block w-full md:w-[calc(50%-12px)] xl:w-[calc(33.33%-16px)] card rounded-xl p-4 bg-card-bg text-gray-100 relative max-w-lg" data-panel="calculator">
+
+
+<div id="major-adjustments-section" class="space-y-2 mb-2">
+
+            <div class="space-y-2">
+                <!-- NEW: UNIFIED MASTER DISPLAY BLOCK -->
+                <div class="bg-gray-800/50 p-3 rounded-lg border border-gray-600 shadow-lg space-y-3">
+                    <!-- TOP SECTION: Input & Calculation Breakdown -->
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <!-- DTP Input -->
+                        <div class="flex flex-col items-center w-full md:w-40"> 
+                            <!-- REVISED: Flex container for Label and new Clear button -->
+                            <div class="flex justify-between items-center mb-2 w-full">
+                                <button id="dtpClear" class="text-xs font-semibold text-red-500 hover:text-red-400 transition duration-150 px-2 py-1 rounded-md border border-red-500/50">
+                                    Clear
+                                </button>
+                                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">DTP</label>
+                                <button id="dtpReset" class="text-xs font-semibold text-fairway-blue hover:text-blue-400 transition duration-150 px-2 py-1 rounded-md border border-fairway-blue/50">
+                                    Reset
+                                </button>
+                            </div>
+                            <div class="relative flex items-center justify-center h-20 flex-shrink-0 w-full">
+                                <p id="dtpDisplay" class="text-3xl md:text-4xl font-extrabold text-white leading-none select-none">150</p>
+                                <!-- DTP Buttons -->
+                                <button data-value="100" class="dtp-btn absolute top-0 left-0 w-1/3 h-1/2 rounded-tl-lg text-grass-green/40 hover:text-grass-green hover:bg-white/10 active:scale-95 transition-all text-2xl font-bold flex items-start justify-start pt-1 pl-2">100</button>
+                                <button data-value="10" class="dtp-btn absolute top-0 left-1/3 right-1/3 h-1/2 text-grass-green/40 hover:text-grass-green hover:bg-white/10 active:scale-95 transition-all text-2xl font-bold flex items-start justify-center pt-1">10</button>
+                                <button data-value="1" class="dtp-btn absolute top-0 right-0 w-1/3 h-1/2 rounded-tr-lg text-grass-green/40 hover:text-grass-green hover:bg-white/10 active:scale-95 transition-all text-2xl font-bold flex items-start justify-end pt-1 pr-2">1</button>
+                                <button data-value="-100" class="dtp-btn absolute bottom-0 left-0 w-1/3 h-1/2 rounded-bl-lg text-fairway-blue/40 hover:text-fairway-blue hover:bg-white/10 active:scale-95 transition-all text-2xl font-bold flex items-end justify-start pb-1 pl-2">100</button>
+                                <button data-value="-10" class="dtp-btn absolute bottom-0 left-1/3 right-1/3 h-1/2 text-fairway-blue/40 hover:text-fairway-blue hover:bg-white/10 active:scale-95 transition-all text-2xl font-bold flex items-end justify-center pb-1">10</button>
+                                <button data-value="-1" class="dtp-btn absolute bottom-0 right-0 w-1/3 h-1/2 rounded-br-lg text-fairway-blue/40 hover:text-fairway-blue hover:bg-white/10 active:scale-95 transition-all text-2xl font-bold flex items-end justify-end pb-1 pr-2">1</button>
+                            </div>
+                        </div>
+                        <!-- Calculation Breakdown -->
+                        <div id="calculation-breakdown" class="space-y-1 text-sm">
+                            <!-- C: Carry (Wind + Elevation) -->
+                            <div class="flex justify-between items-baseline gap-2">
+                                <span class="font-semibold text-grass-green text-base">C:</span>
+                               <span id="totalAdjustment" class="font-extrabold text-grass-green text-base w-12 text-right">0.0</span>
+                                <span id="carryGridAdjustmentDisplay" class="font-semibold text-grass-green text-sm w-10 text-right">0.0g</span>
+                            </div>
+                            <!-- L: Lie (Uphill/Downhill) -->
+                            <div class="flex justify-between items-baseline gap-2">
+                                <span class="font-semibold text-fairway-blue text-base">L:</span>
+                                <span id="lieAdjustmentValue" class="font-extrabold text-fairway-blue text-base w-12 text-right">0.0</span>
+                                <span id="lieGridAdjustmentDisplay" class="font-semibold text-fairway-blue text-sm w-10 text-right">0.0g</span>
+                            </div>
+                            <!-- R: Roll -->
+                            <div class="flex justify-between items-baseline gap-2">
+                                <span class="font-semibold text-grass-green text-base">R:</span>
+                                <span id="rollValueDisplay" class="font-extrabold text-grass-green text-base w-12 text-right">0.0</span>
+                                <span id="rollGridDisplay" class="font-semibold text-grass-green text-sm w-10 text-right">0.0g</span>
+                            </div>
+                            <!-- Divider -->
+                            <hr class="border-gray-600 my-1">
+                            <!-- T: Total -->
+                            <div class="flex justify-between items-baseline gap-2">
+                                <span class="font-bold text-bunker-yellow text-base">T:</span>
+                                <span id="finalAdjustmentValue" class="font-extrabold text-bunker-yellow text-base w-12 text-right">0.0</span>
+                                <span id="finalGridAdjustmentDisplay" class="font-semibold text-bunker-yellow text-sm w-10 text-right">0.0g</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- DIVIDER -->
+                    <hr class="border-gray-700">
+                    <!-- BOTTOM SECTION: Actionable Outputs -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- HIT CARRY -->
+                        <div class="text-center bg-gray-900/50 p-2 rounded-lg flex flex-col justify-between">
+                            <div class="flex justify-between items-center">
+                                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">HIT CARRY</label>
+                                <div class="flex items-center gap-2">
+                                    <button id="powerDecrementBtn" class="text-lg font-extrabold text-fairway-blue hover:text-blue-300 transition-colors">-</button>
+                                    <span id="powerPercentDisplay" class="text-base font-bold text-white w-12 text-center">100%</span>
+                                    <button id="powerIncrementBtn" class="text-lg font-extrabold text-grass-green hover:text-emerald-300 transition-colors">+</button>
+                                </div>
+                            </div>
+                            <!-- REVISED: Use justify-between for symmetrical layout -->
+                            <div class="flex justify-between items-center">
+                                <!-- Container for stacked range numbers on the left -->
+                                <div class="flex flex-col items-start w-10">
+                                    <p id="clubRangeMinDisplay" class="text-sm font-bold text-gray-400">0</p>
+                                    <p id="clubRangeMaxDisplay" class="text-sm font-bold text-gray-400">0</p>
+                                </div>
+                                <!-- Main display, now centered -->
+                                <p id="hitDistanceDisplay" class="text-3xl md:text-4xl font-extrabold text-white leading-tight text-center">0.0</p>
+                                <!-- NEW: Invisible placeholder for symmetrical spacing -->
+                                <div class="w-10"></div>
+                            </div>
+                            <p id="clubMatchDisplay" class="text-sm font-semibold h-5 -mt-1">--</p>
+                        </div>
+                        <!-- AIM ADJUSTMENT -->
+                        <div class="text-center bg-gray-900/50 p-2 rounded-lg">
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">AIM ADJUSTMENT</label>
+                            <div class="flex justify-center items-baseline gap-2 mt-2">
+                                <p id="aimAdjustmentDisplay" class="text-2xl font-extrabold text-white leading-tight">Center</p>
+                                <p id="aimGridAdjustmentDisplay" class="text-base font-semibold text-white leading-tight">0.0g</p>
+                            </div>
+                            <p id="aimMultiplierDisplay" class="text-xs font-semibold text-blue-400 h-5 mt-1 truncate">No wind multiplier active</p>
+                        </div>
+                    </div>
+                    <!-- Wrapper for Club Buttons with Dividers (Moved) -->
+                    <div class="pt-3 mt-3 border-t border-gray-700 text-center">
+                        <div id="club-slim-buttons" class="grid grid-cols-5 gap-2">
+                            <button data-club="D" class="club-btn text-xs font-bold px-2 py-1 rounded-md">D</button>
+                            <button data-club="3W" class="club-btn text-xs font-bold px-2 py-1 rounded-md">3W</button>
+                            <button data-club="5W" class="club-btn text-xs font-bold px-2 py-1 rounded-md">5W</button>
+                            <button data-club="7W" class="club-btn text-xs font-bold px-2 py-1 rounded-md">7W</button>
+                            <button data-club="3H" class="club-btn text-xs font-bold px-2 py-1 rounded-md">3H</button>
+                            <button data-club="5H" class="club-btn text-xs font-bold px-2 py-1 rounded-md">5H</button>
+                            <button data-club="2" class="club-btn text-xs font-bold px-2 py-1 rounded-md">2</button>
+                            <button data-club="3" class="club-btn text-xs font-bold px-2 py-1 rounded-md">3</button>
+                            <button data-club="4" class="club-btn text-xs font-bold px-2 py-1 rounded-md">4</button>
+                            <button data-club="5" class="club-btn text-xs font-bold px-2 py-1 rounded-md">5</button>
+                            <button data-club="6" class="club-btn text-xs font-bold px-2 py-1 rounded-md">6</button>
+                            <button data-club="7" class="club-btn active text-xs font-bold px-2 py-1 rounded-md">7</button>
+                            <button data-club="8" class="club-btn text-xs font-bold px-2 py-1 rounded-md">8</button>
+                            <button data-club="9" class="club-btn text-xs font-bold px-2 py-1 rounded-md">9</button>
+                            <button data-club="PW" class="club-btn text-xs font-bold px-2 py-1 rounded-md">PW</button>
+                            <button data-club="50°" class="club-btn text-xs font-bold px-2 py-1 rounded-md">50°</button>
+                            <button data-club="52°" class="club-btn text-xs font-bold px-2 py-1 rounded-md">52°</button>
+                            <button data-club="56°" class="club-btn text-xs font-bold px-2 py-1 rounded-md">56°</button>
+                            <button data-club="60°" class="club-btn text-xs font-bold px-2 py-1 rounded-md">60°</button>
+                            <button data-club="62°" class="club-btn text-xs font-bold px-2 py-1 rounded-md">62°</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- END: UNIFIED MASTER DISPLAY BLOCK -->
+
+            </div>
+        </div>
+
+<div id="input-section" class="space-y-3 mb-2 border-t pt-3 border-gray-700">
+
+
+<!-- START COMPACT ELEVATION SECTION -->
+<div class="mb-2">
+                
+<!-- REVISED Row 1: Polarity, Base Elevation Control, and Total Display -->
+<div class="flex justify-between items-center mb-1">
+                    <!-- Left Side: Polarity Toggle and Total Elevation Display -->
+                    <div class="flex items-center space-x-3">
+                        <button id="elevationPolarityToggle" 
+                                class="w-8 h-8 rounded-full text-lg font-extrabold transition-colors duration-200 
+                                       bg-grass-green hover:bg-grass-green/80 text-black shadow-lg flex items-center justify-center p-0 leading-none">
+                            +
+                        </button>
+                        <span class="text-base font-medium" id="polarityText">
+                            Uphill
+                            <span class="text-3xl font-extrabold ml-2" id="signedTotalElevationDisplay">0</span>
+                        </span>
+                    </div>
+                    
+                    <!-- Right Side: Base Elevation Increment/Decrement (Mirrors Wind Control) -->
+                    <div class="flex items-center gap-3">
+                        <button id="elevationDecrementBtn" class="w-8 h-8 rounded-full text-lg font-extrabold transition-colors duration-200 bg-fairway-blue hover:bg-fairway-blue/80 text-black shadow-lg flex items-center justify-center">-</button>
+                        <span id="baseElevationDisplay" class="text-3xl font-extrabold text-white w-10 text-center">0</span>
+                        <button id="elevationIncrementBtn" class="w-8 h-8 rounded-full text-lg font-extrabold transition-colors duration-200 bg-grass-green hover:bg-grass-green/80 text-black shadow-lg flex items-center justify-center">+</button>
+                    </div>
+                </div>
+                
+                
+<!-- Row 2: Elevation Slider (no margin-left needed anymore) -->
+<input type="range" id="elevation" value="0" min="0" max="50" step="1" class="mt-1 block w-full elevation-slider">
+                
+<!-- REVISED Row 3: Base/Bonus Status and Bonus Buttons -->
+                <div class="flex justify-between items-center mt-1">
+                    <!-- Left: Base/Bonus Status -->
+                    <span class="text-xs text-gray-500">
+                        Base: <span id="baseElevationSliderDisplay" class="font-semibold text-gray-300">0</span> 
+                        | Bonus: <span id="extraElevationDisplay" class="font-semibold text-bunker-yellow">0</span>
+                    </span>
+                    <!-- Right: Bonus Buttons -->
+                    <div class="flex items-center space-x-2">
+                    <button id="resetBonusButton" 
+                            class="h-7 px-2 rounded-full text-xs font-bold transition-colors duration-200 
+                                   bg-gray-700 hover:bg-gray-600 text-gray-300 shadow-md flex items-center justify-center">
+                        Reset Bonus
+                    </button>
+                    <button id="elevationPlus50Button" 
+                            class="h-7 px-3 rounded-full text-xs font-bold transition-colors duration-200 
+                                   bg-gray-700 hover:bg-gray-600 text-gray-300 shadow-md flex items-center justify-center">
+                        +50
+                    </button>
+                    </div>
+                </div>
+            </div>
+            <!-- END COMPACT ELEVATION SECTION -->
+
+            
+<div class="mb-2">
+                <div class="flex justify-between items-center">
+                    <label for="windSpeed" class="block text-sm font-medium text-gray-200">Wind</label>
+                    <!-- NEW: Increment/Decrement buttons -->
+                    <div class="flex items-center gap-3">
+                        <button id="windDecrementBtn" class="w-8 h-8 rounded-full text-lg font-extrabold transition-colors duration-200 bg-fairway-blue hover:bg-fairway-blue/80 text-black shadow-lg flex items-center justify-center">-</button>                        
+                        <span id="windSpeedValueNumeral" class="text-3xl font-extrabold text-white w-10 text-center">10</span>
+
+                        <button id="windIncrementBtn" class="w-8 h-8 rounded-full text-lg font-extrabold transition-colors duration-200 bg-grass-green hover:bg-grass-green/80 text-black shadow-lg flex items-center justify-center">+</button>
+                    </div>
+                </div>
+                
+<input type="range" id="windSpeed" value="10" min="0" max="30" step="1"
+                       class="mt-1 block w-full">
+                <div class="text-right mt-1">
+                    <span id="windSpeedValueCategory" class="text-xs font-semibold text-gray-300 leading-none">Medium (6-10)</span>
+                </div>
+            </div>
+
+            
+<div class="relative flex justify-center mb-2">
+                
+                <div id="windDialContainer" class="relative w-52 h-52 rounded-full flex items-center justify-center select-none touch-manipulation flex-shrink-0 z-10">
+                    
+                    
+<!-- Diagonal Dashes (45, 135, 225, 315 degrees) -->
+                    <div class="absolute inset-0 pointer-events-none z-20">
+                        <!-- 45 degrees (Top Right) -->
+                        <div class="absolute inset-0" style="transform: rotate(45deg);">
+                            <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                                <div class="h-2 w-0.5 bg-gray-400 rounded-full"></div>
+                            </div>
+                        </div>
+                        <!-- 135 degrees (Bottom Right) -->
+                        <div class="absolute inset-0" style="transform: rotate(135deg);">
+                            <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                                <div class="h-2 w-0.5 bg-gray-400 rounded-full"></div>
+                            </div>
+                        </div>
+                        <!-- 225 degrees (Bottom Left) -->
+                        <div class="absolute inset-0" style="transform: rotate(225deg);">
+                            <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                                <div class="h-2 w-0.5 bg-gray-400 rounded-full"></div>
+                            </div>
+                        </div>
+                        <!-- 315 degrees (Top Left) -->
+                        <div class="absolute inset-0" style="transform: rotate(315deg);">
+                            <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                                <div class="h-2 w-0.5 bg-gray-400 rounded-full"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    
+<div id="windFill" class="absolute inset-x-0 bottom-0 rounded-b-full transition-all duration-300 ease-out" style="height: 0%; z-index: 10;"></div>
+
+                    
+<!-- SVG VIEWBOX AND POINTS ADJUSTED FOR 5% REDUCTION -->
+<svg id="windDirectionArrow" viewBox="0 0 95 95" class="absolute w-full h-full" style="transform: rotate(0deg); z-index: 30;">
+                        <!-- Points adjusted proportionally (scaled by 0.95) to fit the new 95x95 viewBox -->
+<polygon points="47.5,15.2 38.0,38.0 47.5,33.25 57.0,38.0" fill="#ffffff" />
+</svg>
+
+                    
+<span id="n-snap" class="dial-label up snap-target cursor-pointer hover:text-bunker-yellow" data-direction="0">N</span>
+                    <span id="s-snap" class="dial-label down snap-target cursor-pointer hover:text-bunker-yellow" data-direction="180">S</span>
+                    <span id="w-snap" class="dial-label left snap-target cursor-pointer hover:text-bunker-yellow" data-direction="270">W</span>
+                    <span id="e-snap" class="dial-label right snap-target cursor-pointer hover:text-bunker-yellow" data-direction="90">E</span>
+                    
+                    
+
+<div id="windDialSpeedDisplayWrapper" class="absolute bottom-12 text-center p-1 rounded-lg">
+                        <span id="windDialSpeedDisplay" class="text-5xl font-extrabold text-white leading-none">10</span>
+                    </div>
+
+                </div>
+
+                
+<div id="angleDisplayWrapper" class="absolute z-20 right-2 bottom-0 transform -translate-y-1"> 
+                    <div class="w-20 text-center bg-gray-900/90 backdrop-blur-sm px-3 py-0.5 rounded-xl border border-gray-700">
+                        <span id="windAngleDisplay" class="text-2xl font-extrabold text-white block leading-none">0°</span>
+                    </div>
+                </div>
+
+            </div>
+            <!-- NEW: Ball Lie Sliders -->
+            <!-- REVISED: Use grid-cols-2 to place lie controls side-by-side -->
+            <div class="grid grid-cols-2 gap-x-4 pt-2">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="uphillDownhillLie" class="block text-sm font-medium text-gray-200">U/D Lie</label>
+                        <span id="uphillDownhillLieValueDisplay" class="text-sm font-bold text-white"></span>
+                    </div> 
+                    <!-- REVISED: Added increment/decrement buttons around the slider -->
+                    <div class="flex items-center gap-2 mt-2">
+                        <button type="button" data-target="uphillDownhillLie" data-step="-1" class="lie-slider-increment-btn text-white rounded-md bg-fairway-blue/90 hover:bg-fairway-blue transition-colors duration-150">-</button>
+                        <input type="range" id="uphillDownhillLie" value="0" min="-8" max="8" step="0.1" class="w-full lie-slider">
+                        <button type="button" data-target="uphillDownhillLie" data-step="1" class="lie-slider-increment-btn text-white rounded-md bg-grass-green/90 hover:bg-grass-green transition-colors duration-150">+</button>
+                    </div>
+                    <div class="text-center mt-1">
+                        <div class="grid grid-cols-3">
+                            <span class="text-xs font-semibold text-gray-300 leading-none text-left">Down</span>
+                            <span id="uphillDownhillLieDisplay" class="text-xs font-semibold text-gray-400 leading-none lie-level-snap">Level</span>
+                            <span class="text-xs font-semibold text-gray-300 leading-none text-right">Up</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="feetLie" class="block text-sm font-medium text-gray-200">A/B Feet</label>
+                        <span id="feetLieValueDisplay" class="text-sm font-bold text-white"></span>
+                    </div> 
+                    <!-- REVISED: Added increment/decrement buttons around the slider -->
+                    <div class="flex items-center gap-2 mt-2">
+                        <button type="button" data-target="feetLie" data-step="-1" class="lie-slider-increment-btn text-white rounded-md bg-fairway-blue/90 hover:bg-fairway-blue transition-colors duration-150">-</button>
+                        <input type="range" id="feetLie" value="0" min="-8" max="8" step="0.1" class="w-full lie-slider">
+                        <button type="button" data-target="feetLie" data-step="1" class="lie-slider-increment-btn text-white rounded-md bg-grass-green/90 hover:bg-grass-green transition-colors duration-150">+</button>
+                    </div>
+                    <div class="text-center mt-1">
+                        <div class = "grid grid-cols-3">
+                            <span id="feetLieLabelBelow" class="text-xs font-semibold text-gray-300 leading-none text-left">Below</span>
+                            <span id="feetLieDisplay" class="text-xs font-semibold text-gray-400 leading-none lie-level-snap">Level</span>
+                            <span id="feetLieLabelAbove" class="text-xs font-semibold text-gray-300 leading-none text-right">Above</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+
+            <!-- NEW: Stopwatch for Green Speed Timing -->
+            <div id="stopwatch-section" class="pt-2 mt-2 border-t border-gray-700 space-y-2">
+                <!-- Container for Green Mode Controls -->
+                <div id="stopwatchGreenControlsContainer" class="flex justify-between items-center bg-gray-900/50 p-2 rounded-lg gap-2">
+                    <button id="stopwatchModeToggle" class="w-20 h-8 rounded-md text-sm font-bold transition-colors duration-200 shadow-md flex items-center justify-center bg-gray-800/50 border border-gray-600">
+                        <span id="stopwatchModeLabel" class="text-grass-green">Green</span>
+                    </button>
+
+                    <div id="stopwatchTotalContainer" class="flex flex-row items-baseline justify-center flex-grow gap-2">
+                        <span id="stopwatchTotalLabel" class="text-sm font-bold text-bunker-yellow">CUPS:</span>
+                        <span id="stopwatchTotalDisplay" class="text-xl font-bold text-white">0 cups</span>
+                    </div>
+                    <!-- NEW: Container for Lie Result, hidden by default -->
+                    <div id="stopwatchLieResultContainer" class="hidden flex-col items-center flex-grow">
+                        <span class="text-sm font-bold text-bunker-yellow flex-shrink-0">TOTAL BREAK:</span>
+                        <span id="stopwatchLieResultDisplayGreen" class="text-xl font-bold text-white text-center">---</span>
+                    </div>
+                    <div id="stopwatchManualControls" class="flex items-center gap-1 flex-shrink-0">
+                        <button id="stopwatchManualSubtractBtn" class="w-8 h-8 rounded-full text-lg font-extrabold transition-colors duration-200 bg-fairway-blue hover:bg-fairway-blue/80 text-black shadow-md flex items-center justify-center">-</button>
+                        <button id="stopwatchManualAddBtn" class="w-8 h-8 rounded-full text-lg font-extrabold transition-colors duration-200 bg-grass-green hover:bg-grass-green/80 text-black shadow-md flex items-center justify-center">+</button>
+                        <button id="stopwatchClearTotal" class="w-8 h-8 rounded-full text-lg font-extrabold transition-colors duration-200 bg-red-500 hover:bg-red-400 text-black shadow-md flex items-center justify-center ml-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- NEW: Horizontal Container for Lie Mode Controls -->
+                <div id="stopwatchLieControlsContainer" class="hidden justify-between items-center bg-gray-900/50 p-2 rounded-lg gap-2">
+                    <button id="stopwatchModeToggleLie" class="w-20 h-8 rounded-md text-sm font-bold transition-colors duration-200 shadow-md flex items-center justify-center bg-gray-800/50 border border-gray-600">
+                        <span id="stopwatchModeLabelLie" class="text-fairway-blue">Lie</span>
+                    </button>
+                    <button id="lieTargetToggle" data-target="uphillDownhillLie" class="w-16 h-8 rounded-md text-xs font-bold transition-colors duration-200 shadow-md flex items-center justify-center bg-gray-700 text-white hover:bg-gray-600">
+                        <span id="lieTargetLabel">U/D Lie</span>
+                    </button>
+                    <div class="flex flex-row items-baseline justify-center flex-grow gap-2">
+                        <span class="text-sm font-bold text-bunker-yellow">LIE RESULT:</span>
+                        <span id="stopwatchLieResultDisplayLie" class="text-xl font-bold text-white">---</span>
+                    </div>
+                    <button id="liePolarityToggle" class="w-16 h-8 rounded-md text-xs font-bold transition-colors duration-200 shadow-md flex items-center justify-center bg-grass-green text-black">Up</button>
+                </div>
+
+                <!-- NEW: Additions List Display -->
+                <div id="stopwatchAdditionsContainer" class="text-left px-2 -mt-2 h-7 flex items-center overflow-x-auto whitespace-nowrap">
+                    <div id="stopwatchAdditionsList" class="flex items-center gap-x-3"></div>
+                </div>
+
+                <!-- REVISED: Main Timer Row with new THREE-COLUMN grid layout -->
+                <div class="grid grid-cols-[auto_1fr_auto] gap-x-3 items-center bg-gray-900/50 p-2 rounded-lg min-h-[96px]">
+                    <!-- Left Column: Square Start/Stop Button -->
+                    <button id="stopwatchStartStop" class="h-20 w-20 flex items-center justify-center text-lg font-bold text-black bg-grass-green rounded-md hover:bg-grass-green/80 transition-colors shadow-lg">Start</button>
+
+                    <!-- Center Column: Timer Display and Result Actions -->
+                    <div class="flex flex-col justify-center gap-y-1">
+                        <!-- Row 1: Timer and Cup Result (Text) -->
+                        <div class="flex items-baseline justify-center gap-x-3">
+                            <span id="stopwatchDisplay" class="text-3xl font-mono font-bold text-white select-none">0.00s</span>
+                            <span id="stopwatchCups" class="hidden text-lg font-semibold text-white"></span>
+                        </div>
+                        <!-- Row 2: Result Visualization (Line and Dot) -->
+                        <div id="stopwatchResultViz" class="hidden">
+                            <!-- The visualization will be injected here by JS -->
+                        </div>
+                        <!-- Row 3: Action Buttons (Halve) -->
+                        <div id="stopwatchResultActions" class="hidden flex justify-center">
+                            <button id="stopwatchHalveBtn" class="w-2/3 text-center text-sm font-bold text-fairway-blue hover:text-bunker-yellow transition-colors px-4 py-2 rounded-md bg-gray-700/50">Halve</button>
+                        </div>
+                    </div>
+                    <!-- Right Column: Square Add Button (Moved from center column) -->
+                    <button id="stopwatchAddBtn" class="h-20 w-20 flex items-center justify-center text-lg font-bold text-black bg-bunker-yellow rounded-md hover:bg-bunker-yellow/80 transition-colors shadow-lg disabled:bg-gray-600 disabled:cursor-not-allowed" disabled>Add</button>
+                </div>
+            </div>
+
+        </div>
+
+        
+<footer class="flex justify-between items-center mt-2 pt-2 border-t border-gray-700">
+            <h1 class="text-xs font-extrabold text-grass-green">Wind - TanjilChalet 2025 (v1.0)</h1>
+            <div class="flex items-center gap-2">
+                <!-- NEW: Analysis Scroll Button (visible on md+) -->
+                <button id="analysis-scroll-button" class="hidden md:flex relative items-center gap-2 text-gray-400 hover:text-white transition duration-150 px-3 py-1 rounded-md border border-gray-600" aria-label="Scroll to Analysis">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" /><path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+                    </svg>
+                </button>
+                <!-- NEW: Notes Button -->
+                <button id="notesButton" class="text-gray-400 hover:text-white transition duration-150 px-3 py-1 rounded-md border border-gray-600" aria-label="Open Session Notes">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                <button id="settingsButton" class="text-gray-400 hover:text-white transition duration-150 px-3 py-1 rounded-md border border-gray-600" aria-label="Open Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+                    </svg>                
+                </button>
+                <button id="helpButton" class="text-xs font-semibold text-gray-400 hover:text-white transition duration-150 px-3 py-1 rounded-md border border-gray-600">
+                    Help
+                </button>
+            </div>
+        </footer>
+    </div> 
+    <!-- END CARD 1: WIND CALCULATOR -->
+    
+    
+    <!-- START CARD 2: SHOT TRACKER -->
+    <!-- UPDATED: Added tab-panel classes and data-panel attribute. Adjusted responsive width. -->
+    <div id="tracker-panel" class="tab-panel md:block w-full md:w-[calc(50%-12px)] xl:w-[calc(33.33%-16px)] card rounded-xl p-4 bg-card-bg text-gray-100 relative max-w-lg" data-panel="tracker">
+        <h2 class="text-xl font-bold text-white mb-2 text-center border-b border-gray-700 pb-2">Shot Tracker</h2>
+        
+        <!-- Shot Input Section -->
+        <div class="space-y-2 mb-4"> 
+            <div class="flex justify-between items-center">
+                <p class="text-sm font-semibold text-gray-300">Actual Result (vs. Target):</p>
+                <button id="clearShotInputsButton" class="text-xs font-semibold text-red-500 hover:text-red-400 transition duration-150 px-2 py-1 rounded-md border border-red-500/50">
+                    Clear
+                </button>
+            </div>
+            <!-- NEW: Checkboxes for including errors -->
+            <div class="flex items-center space-x-4 mb-2">
+                <label class="flex items-center text-sm text-gray-400">
+                    <input type="checkbox" id="includeCarryError" class="form-checkbox h-4 w-4 text-grass-green rounded border-gray-600 focus:ring-grass-green" checked>
+                    <span class="ml-2">Include Carry Error</span>
+                </label>
+                <label class="flex items-center text-sm text-gray-400">
+                    <input type="checkbox" id="includeAimError" class="form-checkbox h-4 w-4 text-fairway-blue rounded border-gray-600 focus:ring-fairway-blue" checked>
+                    <span class="ml-2">Include Aim Error</span>
+                </label>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+                
+                <!-- Carry Error Input -->
+                <div class="col-span-1">
+                    <label for="actualCarryErrorInput" class="block text-xs font-medium text-gray-400 mb-1">Carry Error (Yards)</label>
+                    
+                    <!-- START Custom Carry Increment Controls -->
+                    <div class="flex flex-col gap-1">
+                        <!-- Positive Adjustments -->
+                        <div class="flex w-full space-x-1 items-center">
+                            <button type="button" data-target="actualCarryErrorInput" data-step="1.0" class="increment-btn text-white w-1/2 p-1 rounded-lg bg-grass-green/90 hover:bg-grass-green transition-colors duration-150 flex items-center justify-center gap-1">↑ 1</button>
+                            <button type="button" data-target="actualCarryErrorInput" data-step="0.1" class="increment-btn text-white w-1/2 p-1 rounded-lg bg-grass-green/70 hover:bg-grass-green transition-colors duration-150 flex items-center justify-center gap-1">↑ ⅒</button>
+                        </div>
+                        
+                        <input type="number" id="actualCarryErrorInput" value="0.0" step="0.1"
+                               class="w-full bg-gray-700 text-white p-2 rounded-lg text-sm text-center font-extrabold border border-gray-600 focus:border-grass-green focus:ring focus:ring-grass-green/50">
+                        <!-- Negative Adjustments -->
+                        <div class="flex w-full space-x-1 items-center">
+                            <button type="button" data-target="actualCarryErrorInput" data-step="-1.0" class="increment-btn text-white w-1/2 p-1 rounded-lg bg-fairway-blue/90 hover:bg-fairway-blue transition-colors duration-150 flex items-center justify-center gap-1">↓ 1</button>
+                            <button type="button" data-target="actualCarryErrorInput" data-step="-0.1" class="increment-btn text-white w-1/2 p-1 rounded-lg bg-fairway-blue/70 hover:bg-fairway-blue transition-colors duration-150 flex items-center justify-center gap-1">↓ ⅒</button>
+                        </div>
+                    </div>
+                    <!-- END Custom Carry Increment Controls -->
+                    
+                </div>
+
+                
+                <!-- Aim Error Input -->
+                <div class="col-span-2">
+                    <label for="actualAimErrorInput" class="block text-xs font-medium text-gray-400 mb-1">Aim Error (Yards)</label>
+                    
+                    <!-- START Custom Aim Increment Controls (Horizontal Button Layout) -->
+                    <div class="flex flex-col gap-1">
+                        <!-- Button Row -->
+                        <div class="flex w-full space-x-1 items-center">
+                            <button type="button" data-target="actualAimErrorInput" data-step="-1.0" class="increment-btn text-white w-1/4 p-1 rounded-lg bg-fairway-blue/90 hover:bg-fairway-blue transition-colors duration-150 flex items-center justify-center gap-1">1 ←</button>
+                            <button type="button" data-target="actualAimErrorInput" data-step="-0.1" class="increment-btn text-white w-1/4 p-1 rounded-lg bg-fairway-blue/70 hover:bg-fairway-blue transition-colors duration-150 flex items-center justify-center gap-1">⅒ ←</button>
+                            <button type="button" data-target="actualAimErrorInput" data-step="0.1" class="increment-btn text-white w-1/4 p-1 rounded-lg bg-grass-green/70 hover:bg-grass-green transition-colors duration-150 flex items-center justify-center gap-1">→ ⅒</button>
+                            <button type="button" data-target="actualAimErrorInput" data-step="1.0" class="increment-btn text-white w-1/4 p-1 rounded-lg bg-grass-green/90 hover:bg-grass-green transition-colors duration-150 flex items-center justify-center gap-1">→ 1</button>
+                        </div>
+                        
+                        <input type="number" id="actualAimErrorInput" value="0.0" step="0.1"
+                               class="w-full bg-gray-700 text-white p-2 rounded-lg text-sm text-center font-extrabold border border-gray-600 focus:border-fairway-blue focus:ring focus:ring-fairway-blue/50">
+                        
+                        <!-- MOVED & RESIZED BUTTON -->
+                        <button id="recordShotButton" 
+                                class="w-full bg-bunker-yellow text-black rounded-lg font-bold hover:bg-bunker-yellow/80 transition duration-150 shadow-lg disabled:opacity-50 h-8 flex items-center justify-center text-sm">
+                            Record Shot Data
+                        </button>
+                    </div>
+                    <!-- END Custom Aim Increment Controls -->
+                    
+                </div>
+            </div>
+
+            <p id="authStatus" class="text-center text-xs text-gray-400">Data saved locally to this browser.</p>
+        </div>
+
+        <!-- MOVED: Multiplier and Roll sections from Calculator Card -->
+        <div id="multiplier-section" class="mt-4 pt-4 border-t border-gray-700 space-y-2">
+            <!-- REVISED: Switched to a 3-column grid for stable centering -->
+            <div class="grid grid-cols-3 items-center gap-2">
+                <!-- Left Column: Save/Revert Buttons -->
+                <div id="manualChangesControlContainer" class="flex items-center justify-end gap-2">
+                    <button id="revertManualMultiplierChanges" class="mb-3 p-1 rounded-full transition duration-150 text-white text-base leading-none flex items-center justify-center w-6 h-6 bg-gray-600 hover:bg-gray-500" aria-label="Revert manual multiplier changes">↩️</button>
+                    <button id="saveManualMultiplierChanges" class="mb-3 p-1 rounded-full transition duration-150 text-black text-xs leading-none flex items-center justify-center w-16 h-6 bg-bunker-yellow hover:bg-bunker-yellow/80 font-bold" aria-label="Save manual multiplier changes">
+                        Save
+                    </button>
+                </div>
+                <!-- Center Column: Title -->
+                <h2 class="text-lg font-bold text-gray-100 mb-3 leading-none text-center">Multipliers</h2>
+                <!-- Right Column: Lock Buttons -->
+                <div class="flex items-center justify-end gap-2">
+                    <button id="shotBiasToggleButton" class="mb-3 p-1 rounded-full transition duration-150 text-black text-xs leading-none flex items-center justify-center w-16 h-6 bg-fairway-blue hover:bg-fairway-blue/80 font-bold" aria-label="Toggle shot bias">
+                        Fade
+                    </button>
+                    <button id="safetyLockButton" class="mb-3 p-1 rounded-full transition duration-150 text-white text-xs leading-none flex items-center justify-center w-6 h-6 bg-gray-600 hover:bg-gray-500" aria-label="Toggle Safety Lock">
+                        <span id="safetyLockIcon">🔓</span>
+                    </button>
+                    <button id="analysisLockButton" class="mb-3 p-1 rounded-full transition duration-150 text-white text-xs leading-none flex items-center justify-center w-6 h-6 bg-gray-600 hover:bg-gray-500" aria-label="Toggle Analysis Lock">
+                        <span id="analysisLockIcon">🔗</span>
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mt-3 text-xs"> 
+                <div class="space-y-2">
+                    <label for="headwindMultiplier" class="block text-xs font-medium text-gray-400 flex justify-between items-center">
+                        <span id="headwindLabel">Headwind</span>
+                        <div class="flex items-center gap-2">                           
+                            <span id="headwindTrustScoreText" class="text-xs font-bold w-12 text-right">--%</span>
+                            <span id="headwindMultiplierValue" class="text-xs text-gray-100 font-semibold w-8 text-right">1.50</span>
+                        </div>
+                    </label>
+                    <input type="range" id="headwindMultiplier" value="150" min="0" max="200" step="1" class="mt-1 block w-full multiplier-slider">
+                </div>
+                <div class="space-y-2">
+                    <label for="tailwindMultiplier" class="block text-xs font-medium text-gray-400 flex justify-between items-center">
+                        <span id="tailwindLabel">Tailwind</span>
+                        <div class="flex items-center gap-2">                           
+                            <span id="tailwindTrustScoreText" class="text-xs font-bold w-12 text-right">--%</span>
+                            <span id="tailwindMultiplierValue" class="text-xs text-gray-100 font-semibold w-8 text-right">1.00</span>
+                        </div>
+                    </label>
+                    <input type="range" id="tailwindMultiplier" value="100" min="0" max="200" step="1" class="mt-1 block w-full multiplier-slider">
+                </div>
+                <div class="space-y-2">
+                    <label for="opposedCrosswindMultiplier" class="block text-xs font-medium text-gray-400 flex justify-between items-center gap-2">
+                        <div id="opposedCrosswindLabel" class="flex flex-col leading-tight">
+                            <span>D/F Bias</span>
+                            <span>Opposed</span>
+                        </div>
+                        <div class="flex items-center gap-2">                           
+                            <span id="opposedCrosswindTrustScoreText" class="text-xs font-bold w-12 text-right">--%</span>
+                            <span id="opposedCrosswindMultiplierValue" class="text-xs text-gray-100 font-semibold w-8 text-right">1.00</span>
+                        </div>
+                    </label>
+                    <input type="range" id="opposedCrosswindMultiplier" value="100" min="0" max="200" step="1" class="mt-1 block w-full multiplier-slider">
+                </div>
+                <div class="space-y-2">
+                    <label for="assistCrosswindMultiplier" class="block text-xs font-medium text-gray-400 flex justify-between items-center gap-2">
+                        <div id="assistCrosswindLabel" class="flex flex-col leading-tight">
+                            <span>D/F Bias</span>
+                            <span>Assist</span>
+                        </div>
+                        <div class="flex items-center gap-2">                           
+                            <span id="assistCrosswindTrustScoreText" class="text-xs font-bold w-12 text-right">--%</span>
+                            <span id="assistCrosswindMultiplierValue" class="text-xs text-gray-100 font-semibold w-8 text-right">1.00</span>
+                        </div>
+                    </label>
+                    <input type="range" id="assistCrosswindMultiplier" value="100" min="0" max="200" step="1" class="mt-1 block w-full multiplier-slider">
+                </div>
+            </div>
+            <!-- REVISED: Removed the redundant border-t from this header to clean up the layout. -->
+            <h2 class="text-lg font-bold text-gray-100 mb-2 text-center pt-4 mt-4">Roll Calculation</h2>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+                <div class="space-y-1">
+                    <label for="baseRollInput" class="block text-xs font-medium text-gray-400">Base Roll (Yards)</label>
+                    <div class="flex items-center w-full">
+                        <button type="button" data-target="baseRollInput" data-step="-0.5" class="roll-increment-btn text-white rounded-l-md bg-fairway-blue/90 hover:bg-fairway-blue transition-colors duration-150">-</button>
+                        <input type="number" id="baseRollInput" value="7.0" step="0.5" class="w-16 bg-gray-700 text-white p-1 text-lg text-center font-bold border-y border-gray-600 focus:border-bunker-yellow focus:ring-0 disabled:opacity-50 h-[2.5rem]">
+                        <button type="button" data-target="baseRollInput" data-step="0.5" class="roll-increment-btn text-white rounded-r-md bg-grass-green/90 hover:bg-grass-green transition-colors duration-150">+</button>
+                    </div>
+                    <span id="defaultBaseRollDisplay" class="text-xs text-gray-500 pl-1">(Default: --)</span>
+                </div>
+                <div class="space-y-1">
+                    <label for="windRollSensitivity" class="block text-xs font-medium text-gray-400">Wind Sensitivity %</label>
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center w-full">
+                            <button type="button" data-target="windRollSensitivity" data-step="-1" class="roll-increment-btn text-white rounded-l-md bg-fairway-blue/90 hover:bg-fairway-blue transition-colors duration-150">-</button>
+                            <input type="number" id="windRollSensitivity" value="40" min="0" max="100" class="w-16 bg-gray-700 text-white p-1 text-lg text-center font-bold border-y border-gray-600 focus:border-bunker-yellow focus:ring-0 disabled:opacity-50 h-[2.5rem]">
+                            <button type="button" data-target="windRollSensitivity" data-step="1" class="roll-increment-btn text-white rounded-r-md bg-grass-green/90 hover:bg-grass-green transition-colors duration-150">+</button>
+                        </div>
+                        <span id="sensitivityEffectDisplay" class="text-xs font-bold text-gray-400 w-14 text-center">x1.00 (0.0y)</span>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <label for="headwindRollPercent" class="block text-xs font-medium text-gray-400">Headwind Roll %</label>
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center w-full">
+                            <button type="button" data-target="headwindRollPercent" data-step="-1" class="roll-increment-btn text-white rounded-l-md bg-fairway-blue/90 hover:bg-fairway-blue transition-colors duration-150">-</button>
+                            <input type="number" id="headwindRollPercent" value="35" min="0" max="200" class="w-16 bg-gray-700 text-white p-1 text-lg text-center font-bold border-y border-gray-600 focus:border-bunker-yellow focus:ring-0 disabled:opacity-50 h-[2.5rem]">
+                            <button type="button" data-target="headwindRollPercent" data-step="1" class="roll-increment-btn text-white rounded-r-md bg-grass-green/90 hover:bg-grass-green transition-colors duration-150">+</button>
+                        </div>
+                        <span id="hwRollEffectDisplay" class="text-xs font-bold text-red-400 w-14 text-center">-0.0y</span>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <label for="tailwindRollPercent" class="block text-xs font-medium text-gray-400">Tailwind Roll %</label>
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center w-full">
+                            <button type="button" data-target="tailwindRollPercent" data-step="-1" class="roll-increment-btn text-white rounded-l-md bg-fairway-blue/90 hover:bg-fairway-blue transition-colors duration-150">-</button>
+                            <input type="number" id="tailwindRollPercent" value="25" min="0" max="200" class="w-16 bg-gray-700 text-white p-1 text-lg text-center font-bold border-y border-gray-600 focus:border-bunker-yellow focus:ring-0 disabled:opacity-50 h-[2.5rem]">
+                            <button type="button" data-target="tailwindRollPercent" data-step="1" class="roll-increment-btn text-white rounded-r-md bg-grass-green/90 hover:bg-grass-green transition-colors duration-150">+</button>
+                        </div>
+                        <span id="twRollEffectDisplay" class="text-xs font-bold text-grass-green w-14 text-center">+0.0y</span>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <label for="greenFirmnessDisplay" class="block text-xs font-medium text-gray-400">Green Firmness</label>
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center w-full">
+                            <button type="button" id="firmnessDecrementBtn" class="roll-increment-btn text-white rounded-l-md bg-fairway-blue/90 hover:bg-fairway-blue transition-colors duration-150">-</button>
+                            <span id="greenFirmnessDisplay" class="w-16 bg-gray-700 text-white p-1 text-sm text-center font-bold border-y border-gray-600 flex items-center justify-center h-[2.5rem]">Firm</span>
+                            <button type="button" id="firmnessIncrementBtn" class="roll-increment-btn text-white rounded-r-md bg-grass-green/90 hover:bg-grass-green transition-colors duration-150">+</button>
+                        </div>
+                        <span id="firmnessEffectDisplay" class="text-xs font-bold text-gray-400 w-14 text-center">x1.00</span>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <label for="greenSpeedInput" class="block text-xs font-medium text-gray-400">Green Speed</label>
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center w-full">
+                            <button type="button" data-target="greenSpeedInput" data-step="-1" class="roll-increment-btn text-white rounded-l-md bg-fairway-blue/90 hover:bg-fairway-blue transition-colors duration-150">-</button>
+                            <input type="number" id="greenSpeedInput" value="151" min="0" max="300" class="w-16 bg-gray-700 text-white p-1 text-lg text-center font-bold border-y border-gray-600 focus:border-bunker-yellow focus:ring-0 disabled:opacity-50 h-[2.5rem]">
+                            <button type="button" data-target="greenSpeedInput" data-step="1" class="roll-increment-btn text-white rounded-r-md bg-grass-green/90 hover:bg-grass-green transition-colors duration-150">+</button>
+                        </div>
+                        <span id="gsEffectDisplay" class="text-xs font-bold text-gray-400 w-14 text-center">+0.0y</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- END: Multiplier and Roll sections -->
+
+        <!-- REVISED: Added pt-2 to create a small space between the divider line and the title below it. -->
+        <div class="border-t border-gray-700 mt-3 pt-2">
+            <div class="flex justify-between items-baseline mb-2">
+                <h3 class="text-lg font-bold text-gray-200">Shot History (Last 10)</h3>
+                <span class="text-sm text-gray-400">Total: <span id="totalShotsTally" class="font-bold text-white">0</span></span>
+            </div>
+            <ul id="shotHistoryList" class="space-y-2 text-sm mb-3">
+                <li class="text-gray-500 text-center py-4">Loading history...</li>
+            </ul>
+        </div>
+    </div> 
+    <!-- END CARD 2: SHOT TRACKER -->
+    
+    
+    <!-- START CARD 3: DATA ANALYSIS -->
+    <!-- UPDATED: Added tab-panel classes and data-panel attribute. Adjusted responsive width. -->
+    <div id="analysis-panel" class="tab-panel md:block w-full md:w-[calc(50%-12px)] xl:w-[calc(33.33%-16px)] card rounded-xl p-4 bg-card-bg text-gray-100 relative max-w-lg" data-panel="analysis">
+        <!-- REVISED: Confirmation Message Area (Positioned inside the card) -->
+        <div id="confirmationMessage" class="hidden absolute top-4 left-1/2 -translate-x-1/2 bg-grass-green text-black text-sm font-bold px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-20">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+            <span id="confirmationText"></span>
+        </div>
+
+        <h2 class="text-xl font-bold text-white mb-3 text-center border-b border-gray-700 pb-2">Multiplier Error Analysis</h2>
+
+        <!-- Club Selection for Analysis -->
+        <div class="mb-4"> 
+            <p class="text-sm font-semibold text-gray-400 mb-2">Select Club for Analysis:</p>
+            <div id="analysis-club-buttons" class="grid grid-cols-5 gap-2">
+                <button data-club="D" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">D<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="3W" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">3W<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="5W" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">5W<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="7W" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">7W<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="3H" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">3H<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="5H" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">5H<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="2" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">2<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="3" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">3<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="4" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">4<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="5" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">5<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="6" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">6<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="7" class="analysis-club-btn active relative text-xs font-bold px-2 py-1 rounded-md">7<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="8" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">8<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="9" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">9<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="PW" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">PW<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="50°" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">50°<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="52°" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">52°<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="56°" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">56°<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="60°" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">60°<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+                <button data-club="62°" class="analysis-club-btn relative text-xs font-bold px-2 py-1 rounded-md">62°<span class="recommendation-badge hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+            </div>
+        </div>
+        
+        <!-- NEW: Recommendation Section (Moved Up) -->
+        <div id="recommendationSection" class="mb-4 pb-4 border-b border-gray-600">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-lg font-bold text-grass-green">Recommendations</h3>
+                <div class="flex items-center gap-2">
+                    <label for="maxErrorForWeightingInput" class="text-xs font-medium text-gray-400">Weighting:</label>
+                    <input type="number" id="maxErrorForWeightingInput" value="10.0" min="1" max="50" step="0.5"
+                           class="w-16 bg-gray-700 text-white p-1 rounded-md text-sm text-center font-bold border border-gray-600 focus:border-bunker-yellow focus:ring focus:ring-bunker-yellow/50">
+                    <div class="tooltip-container">
+                        <span class="flex items-center justify-center h-5 w-5 rounded-full bg-gray-600 text-gray-300 text-xs font-bold cursor-help">?</span>
+                        <span class="tooltip-text">
+                            Controls how much impact shots have based on accuracy. A lower number gives more weight to highly accurate shots. Shots with total error beyond this value are ignored.
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <ul id="recommendationList" class="space-y-2 text-sm mt-2">
+                <!-- Recommendation text will be injected here -->
+            </ul>
+
+        </div>
+
+        <!-- MOVED: Multiplier History Button -->
+        <div class="text-center mb-4">
+            <button id="showHistoryButton" class="w-full text-xs font-semibold text-gray-300 hover:text-white transition duration-150 p-2 rounded-md border border-gray-500">
+                Multiplier History & Analysis Tools
+            </button>
+        </div>
+
+        <!-- NEW: Scatter Plot Section -->
+        <div id="scatterPlotContainer" class="mb-4">
+            <div class="flex justify-between items-center mb-2 gap-2">
+                <h3 class="text-lg font-bold text-gray-200">Shot Plot</h3>
+                <span id="filterStatusDisplay" class="font-semibold text-sm flex-grow text-center"></span>
+                <button id="plotFilterToggleButton" class="text-xs font-semibold text-fairway-blue hover:text-blue-300 transition duration-150 px-2 py-1 rounded-md border border-fairway-blue/50">
+                    View All
+                </button>
+            </div>
+            <div class="relative aspect-square bg-gray-800/50 p-2 rounded-lg border border-gray-600">
+                <canvas id="shotScatterPlot"></canvas>
+            </div>
+            <p id="scatterPlotDescription" class="text-xs text-gray-500 mt-1 text-center">Shows Carry Error (Y-axis) vs. Aim Error (X-axis)</p>
+        </div>
+
+        <!-- Results Display Table -->
+        <div class="space-y-3">
+            <h3 class="text-lg font-bold text-gray-200">Average Shot Errors</h3>
+            <p id="analysisSummary" class="text-xs text-gray-500 mb-2">
+                Currently analyzing: <span class="font-bold text-white" id="currentAnalysisClub">7</span>. 
+                Data points: <span class="font-bold text-white" id="dataPointsCount">0</span>.
+            </p>
+
+            <ul id="analysisResultsList" class="space-y-1">
+                <!-- Table header will be injected by JS -->
+            </ul>
+
+        </div>
+    </div>
+    <!-- END CARD 3: DATA ANALYSIS -->
+    
+    <!-- Hidden file input for preset import -->
+    <input type="file" id="presetImportInput" class="hidden" accept=".json">
+    <input type="file" id="shotImportInput" class="hidden" accept=".json">
+    <input type="file" id="allDataImportInput" class="hidden" accept=".json">
+    <input type="file" id="settingsImportInput" class="hidden" accept=".json">
+    
+    <!-- NEW: Modal for displaying recommendation shots -->
+    <div id="shotDetailModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-card-bg rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-gray-600">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h3 id="modalTitle" class="text-lg font-bold text-white">Shots Used for Recommendation</h3>
+                <button id="closeModalButton" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+            </div>
+            <div id="modalContent" class="p-4 overflow-y-auto">
+                <!-- Shot details will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Modal for displaying multiplier history -->
+    <div id="historyModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-card-bg rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-gray-600">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h3 id="historyModalTitle" class="text-lg font-bold text-white">Analysis Tools</h3>
+                <div class="flex items-center gap-4">
+                    <button id="exportHistoryButton" class="hidden text-xs font-semibold text-fairway-blue hover:text-blue-300 transition duration-150 px-2 py-1 rounded-md border border-fairway-blue/50">
+                        Export ZIP
+                    </button>
+                    <button id="closeHistoryModalButton" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+                </div>
+            </div>
+            <!-- NEW: Main tab structure for the modal -->
+            <div class="p-4 flex flex-col overflow-hidden">
+                <!-- Main Tab Buttons -->
+                <div class="flex-shrink-0 flex border-b border-gray-600 mb-4">
+                    <button class="main-history-tab-button active px-4 py-2 text-sm font-medium text-gray-300" data-target="panel-multiplier-history">History</button>
+                    <button class="main-history-tab-button px-4 py-2 text-sm font-medium text-gray-300" data-target="panel-performance-trends">Trends</button>
+                    <button class="main-history-tab-button px-4 py-2 text-sm font-medium text-gray-300" data-target="panel-multiplier-status">Status</button>
+                </div>
+
+                <!-- Main Tab Panels -->
+                <div class="flex-grow overflow-y-auto">
+                    <!-- Panel 1: Multiplier History (Existing content will go here) -->
+                    <div id="panel-multiplier-history" class="main-history-tab-panel">
+                        <div id="historyTabContainer" class="flex-shrink-0 flex border-b border-gray-600 mb-4">
+                            <!-- Wind strength tab buttons will be injected here by JS -->
+                        </div>
+                        <div id="historyPanelContainer" class="flex-grow overflow-y-auto">
+                            <!-- Wind strength tab panels will be injected here by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Panel 2: Performance Trends (New Chart) -->
+                    <div id="panel-performance-trends" class="main-history-tab-panel hidden">
+                        <select id="performanceChartClubSelect" class="mb-4 w-full md:w-1/3 bg-gray-700 text-white p-2 rounded-md border border-gray-600 focus:border-bunker-yellow focus:ring-0">
+                            <!-- Options will be populated by JS -->
+                        </select>
+                        <div class="relative h-[450px]"><canvas id="performanceTrendChartCanvas"></canvas></div>
+                    </div>
+
+                    <!-- Panel 3: Multiplier Status (Moved from Settings) -->
+                    <div id="panel-multiplier-status" class="main-history-tab-panel hidden space-y-4">
+                        <h4 class="text-base font-semibold text-bunker-yellow border-b border-gray-600 pb-2 mb-3">Multiplier Customization Status</h4>
+                        <div id="multiplierStatusSummary" class="text-center p-3 bg-gray-800/50 rounded-lg">
+                            <!-- Summary will be injected here -->
+                        </div>
+                        <ul id="multiplierStatusList" class="space-y-3">
+                            <!-- Club status list will be injected here -->
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- NEW: Help Modal -->
+    <div id="helpModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-card-bg rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col border border-gray-600">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h3 class="text-lg font-bold text-white">Wind-Tanjilchalet User Guide</h3>
+                <button id="closeHelpModalButton" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+            </div>
+            <div id="helpModalContent" class="p-6 overflow-y-auto space-y-4 text-gray-300 text-sm leading-relaxed">
+                <p>Welcome! This guide will walk you through the features of the Wind-Tanjilchalet application, a powerful tool designed to help you calculate in-game shot adjustments and, more importantly, analyze your results to create personalized multipliers for every club in your bag.</p>                
+                <p>The app is organized into three main tabs:</p>                
+                <ol class="list-decimal list-inside space-y-1 pl-2">                    
+                    <li><strong>Calculator</strong>: Where you input shot conditions to get real-time adjustments.</li>
+                    <li><strong>Tracker</strong>: Where you record the results of your shots.</li>
+                    <li><strong>Analysis</strong>: Where the app analyzes your recorded shots to give you feedback and multiplier recommendations.</li>
+                </ol>
+                
+                <hr class="my-4 border-gray-700">                
+
+                <h3 class="text-lg font-bold text-grass-green border-b border-gray-600 pb-2 mb-2">Important: How Your Data is Saved (Please Read!)</h3>
+                <p>This is a browser-based application. No account is needed, and no personal information is ever requested or collected. All of your data, including every shot you record and every custom multiplier you save, is stored <strong>directly in your current web browser's local storage</strong>. This means:</p>                
+                <ul class="list-none pl-0 space-y-2">
+                    <li class="p-2 bg-blue-900/50 border-l-4 border-blue-500 rounded-r-lg"><strong>Your data is persistent.</strong> It's saved automatically, so you can close this page or restart your device and your information will be waiting for you when you return.</li>
+                    <li class="p-2 bg-red-900/50 border-l-4 border-red-500 rounded-r-lg">Your data is <strong>NOT</strong> saved to an online account. If you clear your browser's cache or switch to a different browser/device, your data will be lost.</li>
+                </ul>
+                <p class="mt-2"><strong>Best Practice:</strong> Regularly use the <strong>`Backup All Data`</strong> button, now located in the <strong>Settings (⚙️) modal</strong>. This saves everything—shots, custom multipliers, and history—into a single file on your device. The <strong>`Import All Data`</strong> button allows you to restore this complete backup, which is perfect for moving your data to a new device or browser.</p>
+
+
+                <hr class="my-4 border-gray-700">
+                
+                <h3 class="text-lg font-bold text-bunker-yellow border-b border-gray-600 pb-2 mb-2">Getting Started: Your First-Time Setup</h3>
+                <p>Before you start calculating and tracking shots, follow these steps to personalize the app. All of these settings are found in the <strong>Settings (⚙️)</strong> modal, accessible from the Calculator tab.</p>
+                <ol class="list-decimal list-inside space-y-2 pl-2 mt-2">
+                    <li><strong>Set Your Handedness:</strong> Go to <strong>Settings (⚙️) &rarr; Player</strong>. Select whether you are a right or left-handed player. This will automatically adjust UI labels like "Fade/Draw" and "Above/Below" to match your perspective.</li>
+                    <li><strong>Set Your Club Ranges & Active Bag:</strong> Go to <strong>Settings (⚙️) &rarr; Club Ranges</strong>. This is a critical step for accuracy.
+                        <ul class="list-disc list-inside space-y-1 pl-4 mt-1">
+                            <li>Check the box next to each of the 13 clubs in your active bag.</li>
+                            <li>For every club, enter its minimum and maximum carry distance in calm conditions. This is crucial for the "Club Match" feature on the calculator.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Set Your Green Grid Multiplier:</strong> Go to <strong>Settings (⚙️) &rarr; Green Grids</strong>. Select the button that matches your character's putting skill level. This ensures the grid display (<code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">g</code>) next to adjustment values is accurate for you.</li>
+                    <li><strong>Review Base Roll Defaults:</strong> Go to <strong>Settings (⚙️) &rarr; Base Roll</strong>. The app has default roll distances for each club. Review and adjust them to your play style, entering a reasonable starting roll you'd expect on a flat, firm green with no wind.</li>
+                    <li><strong>Set Your Shot Bias:</strong> On the <strong>Tracker</strong> tab, find the <strong>Fade / Draw</strong> button. Set this to match your typical shot shape. This is critical for ensuring crosswinds are analyzed correctly. (For left-handers, this button will already be correctly labeled based on your selection in the Player settings).</li>
+                </ol>
+
+                <h3 class="text-lg font-bold text-bunker-yellow border-b border-gray-600 pb-2 mb-2 mt-4">Before Each Round: Pre-Tee Checklist</h3>
+                <p>Before you start a new round, take a moment to check these two settings on the <strong>Tracker</strong> tab to ensure your calculations are accurate for the day's conditions.</p>
+                <ol class="list-decimal list-inside space-y-1 pl-2 mt-2">
+                    <li><strong>Update Green Conditions:</strong> Adjust the <strong>Green Firmness</strong> and <strong>Green Speed</strong> inputs to match the course you are playing. This is vital for accurate roll calculations.</li>
+                    <li><strong>Verify Shot Bias:</strong> Quickly confirm that the <strong>Fade / Draw</strong> button is set correctly to your intended shot shape for the round.</li>
+                </ol>
+
+                <hr class="my-4 border-gray-700">
+
+                <h3 class="text-lg font-bold text-grass-green border-b border-gray-600 pb-2 mb-2">1. The Calculator Tab</h3>
+                <p>This is your main hub for calculating adjustments for your next shot. The inputs for fine-tuning your multipliers and roll have been moved to the <strong>Tracker</strong> tab.</p>                
+                <h4 class="text-base font-semibold text-bunker-yellow mt-3 mb-1">Adjustment Displays</h4>
+                <ul class="list-disc list-inside space-y-3 pl-2">
+                    <li class="font-bold text-white">Calculation Breakdown Block: This small block to the right of the DTP input shows how the final adjustment is calculated.
+                        <ul class="list-disc list-inside space-y-2 pl-2">
+                            <li><strong>Carry (<code class="bg-gray-900 text-grass-green font-mono px-1 py-0.5 rounded-md text-sm">C:</code>)</strong>: The adjustment for wind and elevation during the ball's flight.</li>
+                            <li><strong>Lie (<code class="bg-gray-900 text-fairway-blue font-mono px-1 py-0.5 rounded-md text-sm">L:</code>)</strong>: The adjustment based on an uphill or downhill lie. This only affects carry distance.</li>
+                            <li><strong>Roll (<code class="bg-gray-900 text-grass-green font-mono px-1 py-0.5 rounded-md text-sm">R:</code>)</strong>: The calculated distance the ball will roll forward after landing.</li>
+                            <li><strong>Total (<code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">T:</code>)</strong>: This is the <strong>Final Adjustment</strong>. This is the value added to the DTP to get the Hit Carry. A positive number means you need to hit farther ("Club Up"), and a negative number means you need to hit shorter ("Club Down").</li>
+                            <li class="mt-1 text-xs text-gray-400 italic">This is calculated as: (Carry Adjustment) + (Lie Adjustment) - (Roll).</li>
+                        </ul>
+                    </li>
+                    <li class="font-bold text-white">HIT CARRY: This is the most important output. The large number is the exact distance you need to fly the ball.</li>
+                    <li class="font-bold text-white">AIM ADJUSTMENT: This is the horizontal adjustment for wind, shown in yards (e.g., R 5.1 for "Aim 5.1 yards Right").
+                        <ul class="list-disc list-inside space-y-1 pl-2">
+                            <li>The text below the value (e.g., <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">H:1.50 | A:1.00</code>) shows which multipliers are currently active.</li>
+                        </ul>
+                    </li>
+                    <li class="font-bold text-white">Grid Display (<code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">g</code>): Next to each value, you'll see a number followed by a <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">g</code>. This is the same adjustment converted into "green grids" for quick reference.</li>
+                </ul>
+                <h4 class="text-base font-semibold text-bunker-yellow mt-4 mb-1">Inputs</h4>
+                <ul class="list-disc list-inside space-y-2 pl-2">
+                    <li><strong>DTP / HIT CARRY Block</strong>: This is the primary input for your shot.
+                        <ul class="list-disc list-inside space-y-2 pl-4 mt-1">
+                            <li>First, enter the <strong>Distance to Pin (DTP)</strong> using the large interactive number pad. The DTP counter has two modes, which can be changed in <strong>Settings (⚙️) &rarr; Calculator</strong>:
+                                <ul class="list-disc list-inside space-y-1 pl-4 mt-1">
+                                    <li><strong>Additive Mode (Default):</strong> Buttons add or subtract from the total distance (e.g., 199 + 1 = 200).</li>
+                                    <li><strong>Cyclic Mode:</strong> Buttons only change their specific digit, cycling from 9 to 0 (e.g., 199 + 1 = 190). This allows for precise, granular control.</li>
+                                </ul>
+                                <li>The <strong>Reset</strong> button next to the DTP input is a handy shortcut to set both Elevation and all Lie sliders back to zero.</li>
+                            </li>
+                            <li class="mt-2">The app adds the calculated <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Final Adjustment</code> to the DTP to give you the final <strong>HIT CARRY</strong> distance. This is the exact distance you need to fly the ball.</li>
+                        </ul>
+                    </li>
+                    <li class="font-bold text-white">Power Adjustment: This control, located next to the "HIT CARRY" label, allows you to fine-tune the final yardage based on your personal swing power.
+                        <ul class="list-disc list-inside space-y-2 pl-4 mt-1 font-normal text-gray-300">
+                            <li><strong>Why is this a feature?</strong> It's designed for players who know they consistently hit their shots with a slight overpower (e.g., 101%) or underpower (e.g., 99%). Instead of mentally adjusting the final number, you can set your typical power percentage here.</li>
+                            <li><strong>How does it work?</strong> The app takes the true calculated carry distance and adjusts it based on your setting. For example, if the true carry is 150 yards and you set the power to 101%, the app will display a `HIT CARRY` of <strong>148.5</strong> yards (`150 / 1.01`). This effectively "hides" the true distance and gives you a personalized target to hit.</li>
+                            <li>The setting is persistent and saved automatically, so you don't have to set it for every shot.</li>
+                        
+                           <li>If you do not want to use the feature, simply leave it at 100%. set and forget.</li>
+                        </ul>
+                            <div class="p-3 my-2 bg-blue-900/50 border-l-4 border-blue-500 rounded-r-lg">
+                            <h5 class="font-bold text-blue-300">Advanced Use: Compensating for Rough/Sand Penalties</h5>
+                            <p class="mt-1">You can also use this feature to account for distance penalties from lies like the rough or sand. If you estimate a lie will reduce your distance by 5% (meaning your swing only has 95% effectiveness), you can set the Power to <strong>95%</strong>.</p>
+                            <p class="mt-2">The app will then increase the `HIT CARRY` distance to compensate. For a true 150-yard shot, it would show a `HIT CARRY` of <strong>157.9</strong> yards (150 / 0.95). Hitting your normal 157.9-yard swing from the rough will result in the ball traveling the required 150 yards.</p>
+                            <p class="mt-2 p-2 bg-red-900/50 border border-red-500/50 rounded-md font-semibold"><strong>Warning:</strong> This setting is persistent. You <strong>must</strong> remember to set the power back to 100% (or your personal default) after the shot, otherwise your next calculation from the fairway will be incorrect.</p>
+                        </div>
+                    </li>
+                    <li><strong>Elevation</strong>: Use the <strong>slider</strong> to set the base elevation change (0-50 yards). Click the <strong><code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">+</code> / <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">-</code> button</strong> to toggle between <strong>Uphill</strong> and <strong>Downhill</strong>. Use the <strong><code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">+50</code> button</strong> to add a 50-yard bonus for very large elevation changes. You can press it multiple times. <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Reset Bonus</code> will clear this extra elevation.</li>
+                    <li><strong>Club Selection</strong>: Simply click the button for the club you are using. The <strong>green <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">active</code></strong> button is your currently selected club. Other clubs may highlight in different colors:
+                        <ul class="list-disc list-inside space-y-1 pl-4 mt-1">
+                            <li>A <strong class="text-bunker-yellow">yellow highlight</strong> indicates a <strong>Distance Match</strong>. This means that if you were to select this club, the calculated "Hit Carry" would also fall perfectly within its range. This is useful for finding alternative clubs for the same shot.</li>
+                            <li>When your selected club is a <strong>Distance Match</strong>, the app automatically checks the two stronger and two weaker clubs in your bag. If any of these "neighbour" clubs would also result in a distance match for their own range, they will also be highlighted in yellow, giving you more options.</li>
+                            <li>A <strong class="text-fairway-blue">blue highlight</strong> indicates a <strong>Multiplier Match</strong>. This means the club has the <em>exact same active wind multipliers</em> as your selected club (e.g., if Headwind and Assist Crosswind are active, the equivalent club has the same values for those two multipliers).</li>
+                            <li>Below the "HIT CARRY" value, you will see the <strong>base carry range</strong> for your selected club (e.g., "Match: 168-182"). This range is editable in the <strong>Settings (⚙️)</strong> modal.</li>
+                            <li>This range text will <strong>highlight in yellow</strong> when the calculated "HIT CARRY" distance falls within it, giving you instant confirmation that you have a good club choice. If the Hit Carry is outside the range, it will indicate whether you need to "Club ↑" or "Club ↓".</li>
+                        </ul>
+                    </li>
+                    <li><strong>Wind Speed & Direction</strong>:
+                        <ul class="list-disc list-inside space-y-1 pl-2">
+                            <li><strong>Wind Speed Slider</strong>: Sets the wind's strength (0-30 mph). The display shows the speed and its category (Low, Medium, High, etc.).</li>
+                            <li><strong>Wind Dial</strong>: This is the primary way to set wind direction. Drag the arrow to point in the direction the wind is blowing <em>from</em>. Click <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">N</code>, <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">S</code>, <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">E</code>, or <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">W</code> to quickly snap the arrow to cardinal directions. The display below the dial shows the precise angle (e.g., <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">270°</code>).</li>
+                            <li><strong>Visual Wind Fill</strong>: The blue fill inside the wind dial visually matches the in-game wind meter. This allows you to set the wind strength by eye, even if the numerical speed is hidden in-game.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Ball Lie Sliders</strong>: These two sliders account for uneven lies.
+                        <ul class="list-disc list-inside space-y-1 pl-2">
+                            <li><strong>U/D Lie</strong>: Adjusts for an uphill or downhill lie. This primarily affects your carry distance and is shown as the <code class="bg-gray-900 text-fairway-blue font-mono px-1 py-0.5 rounded-md text-sm">L:</code> value in the calculation breakdown.</li>
+                            <li><strong>A/B Feet</strong>: Adjusts for when the ball is above or below your feet. This affects your aim adjustment. An uphill lie (ball above feet) will cause the ball to go left, so the app will tell you to aim further right, and vice-versa.</li>
+                            <li>You can click the <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Level</code> text below either slider to quickly reset it to zero.</li>
+                        </ul>
+                        <div class="p-3 my-2 bg-gray-900/50 border-l-4 border-fairway-blue rounded-r-lg">
+                            <h5 class="font-bold text-blue-300">What do the percentages mean?</h5>
+                            <p class="mt-1">The percentage value on the lie sliders represents the severity of the slope. You can estimate this by observing the speed of the moving "beads" on the in-game grid. While it requires some practice, here is a general guide:</p>
+                            <ul class="list-disc list-inside space-y-1 pl-2 mt-2">
+                                <li><strong>1-2%</strong>: A very slow to slow-moving bead.</li>
+                                <li><strong>3-5%</strong>: A moderately paced bead.</li>
+                                <li><strong>7%</strong>: A very fast-moving bead on a steep slope.</li>
+                                <li><strong>10%</strong>: An extremely fast-moving bead on a slope that is almost a cliff.</li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li><strong>Stopwatch (Green & Lie Reading)</strong>: Located at the bottom of the calculator, this utility has two modes to help you time the in-game grid beads for both putting and approach shots.
+                        <ul class="list-disc list-inside space-y-1 pl-4 mt-1">
+                            <li><strong>Green Mode</strong>: This is the default mode, designed for reading puts. Time a bead between two grid lines, and the app will suggest a break in cups. You can press <strong>Add</strong> to accumulate multiple reads for a total break.</li>
+                            <li><strong>Lie Mode</strong>: Toggle to this mode to time the beads on the fairway for approach shots. When you stop the timer, it will suggest a slope percentage (e.g., "3%"). You can then press <strong>Apply</strong> to automatically set the 'U/D Lie' or 'A/B Feet' slider to that value. Use the 'Up'/'Down' button to set the polarity of the adjustment.</li>
+                            <li>In <strong>Settings (⚙️) &rarr; Stopwatch</strong>, you can define custom time ranges and their corresponding outputs for both <strong>Green Reading Cues</strong> and <strong>Lie Reading Cues</strong>.</li>
+                        </ul>
+                        <div class="p-3 my-2 bg-gray-900/50 border-l-4 border-bunker-yellow rounded-r-lg">
+                            <h5 class="font-bold text-bunker-yellow">New: Timing Visualization</h5>
+                            <p class="mt-1">When you press the <strong>Add</strong> button, a small visualization appears below the added cup value. This consists of a colored line and a white dot.</p>
+                            <ul class="list-disc list-inside space-y-1 pl-2 mt-2">
+                                <li>The <strong>line</strong> represents the full time window for that cue (e.g., 2.00s to 2.99s). Its color indicates the precision of your timing: <strong class="text-fairway-blue">Blue</strong> for the center (most precise), <strong class="text-bunker-yellow">Yellow</strong> for the middle zones, and <strong class="text-red-500">Red</strong> for the outer edges.</li>
+                                <li>The <strong>white dot</strong> shows exactly where your time landed within that window. This is useful for judging if your timing is consistently near the beginning or end of a cue, which can inform "feel" based adjustments to your read.</li>
+                            </ul>
+                        </div>
+                        <div class="p-3 my-2 bg-gray-900/50 border-l-4 border-grass-green rounded-r-lg">
+                            <h5 class="font-bold text-grass-green">New: Break Adjustment Suggestions (Arrows)</h5>
+                            <p class="mt-1">After you add multiple reads, you may see an arrow icon (e.g., ▲, ▼) or a checkmark (✅) appear next to your total break value. This is an intelligent suggestion to help you fine-tune your read.</p>
+                            <ul class="list-disc list-inside space-y-1 pl-2 mt-2">
+                                <li>The suggestion is based on the "Trust Score" of each individual read. A time that lands in the center of a cue's time window is a high-trust read. A time that lands near the edge is a low-trust read, suggesting you might be between cues.</li>
+                                <li><strong class="text-white">▲ (Up Arrow)</strong>: Suggests you should lean towards <strong>more break</strong>. This appears when your timings are consistently on the faster side of their respective cues, indicating the true break might be closer to the next higher cup value.</li>
+                                <li><strong class="text-white">▼ (Down Arrow)</strong>: Suggests you should lean towards <strong>less break</strong>. This appears when your timings are consistently on the slower side, indicating the true break might be closer to the next lower cup value.</li>
+                                <li>The <strong>number of arrows</strong> (from 1 to 4) indicates the strength of the suggestion. More arrows mean a stronger recommendation to adjust your read.</li>
+                                <li><strong class="text-white">✅ (Checkmark)</strong>: Indicates that your combined reads are confident and consistent. No adjustment is suggested.</li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li><strong>Analysis Button (Pie Chart Icon)</strong>: In the footer of the calculator, this button will <strong>glow yellow</strong> when the Analysis tab has new recommendations for any of your clubs. Clicking it will smoothly scroll the page to the Analysis card.</li>
+                </ul>
+                <hr class="my-4 border-gray-700">
+                
+                <h3 class="text-lg font-bold text-grass-green border-b border-gray-600 pb-2 mb-2">2. The Tracker Tab</h3>
+                <p>This is where you tell the app how your shot actually performed. This data is essential for the Analysis tab.</p>                
+                <p class="p-2 bg-bunker-yellow/20 border-l-4 border-bunker-yellow rounded-r-lg"><strong>Important: Only record shots you feel you struck well from a good lie.</strong> The goal of this app is to perfect your wind multipliers, not to account for swing errors or poor lies (e.g., from the rough). By design, the calculator assumes a clean strike from the fairway. If you hit a bad shot, simply don't record it. This ensures the analysis is based on high-quality data, leading to more accurate recommendations.</p>
+                <ul class="list-disc list-inside space-y-1 pl-2">
+                    <li><strong>Enter Actual Results</strong>: After hitting your shot, compare it to your intended target.
+                        <ul class="list-disc list-inside space-y-1 pl-2">
+                            <li><strong>Carry Error (Yards)</strong>: How far short or long was your shot? <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">+2.5</code> means you landed 2.5 yards <strong>long</strong>. <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">-4.0</code> means you landed 4.0 yards <strong>short</strong>.</li>
+                            <li><strong>Aim Error (Yards)</strong>: How far left or right was your shot? <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">+3.0</code> means you landed 3.0 yards to the <strong>right</strong>. <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">-1.5</code> means you landed 1.5 yards to the <strong>left</strong>.</li>
+                        </ul>
+                        Use the <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">+</code> and <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">-</code> buttons for quick, precise adjustments.
+                    </li>
+                    <li><strong>Include Error Checkboxes</strong>: These are very important! If you know you made a bad swing (e.g., you pushed the ball right), you can <strong>uncheck <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Include Aim Error</code></strong>. This tells the app: "My aim was off because of my swing, not because the wind calculation was wrong." The app will record the aim error as `null` and will not use it when analyzing your crosswind multipliers. The same logic applies to <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Include Carry Error</code> for distance.</li>
+                    <li><strong>Record Shot Data</strong>: Once your errors are entered, click this button. It saves a complete record of the shot: all the calculator settings (wind, elevation, club, multipliers used) AND the actual errors you just entered.</li>
+                    <li><strong>Shot History</strong>: This list shows your last 10 recorded shots for quick review. The colored border on the left indicates the magnitude of the error (Green = good, Yellow = minor error, Red = large error).
+                        <ul class="list-disc list-inside space-y-1 pl-4 mt-1">
+                            <li>You can delete a bad entry by clicking the `×` button on any shot.</li>
+                            <li><strong>NEW:</strong> Click anywhere on a shot item to select it. This highlights the item in blue and filters the <strong>Shot Plot</strong> on the Analysis tab to show only that single shot. If the shot was with a different club, the Analysis tab will automatically switch to that club for you. Click the item again to deselect it.</li>
+                        </ul>
+                    </li>
+                </ul>
+                <h4 class="text-base font-semibold text-bunker-yellow mt-3 mb-1">Multipliers & Roll Section</h4>
+                <p>This is the core of the app's personalization. Multipliers adjust how much the wind affects your shot, and the roll settings determine the final ground distance.</p>                
+                <div class="p-3 my-2 bg-gray-900/50 border-l-4 border-bunker-yellow rounded-r-lg">
+                    <h5 class="font-bold text-bunker-yellow">The Trust Score (%)</h5>
+                    <p class="mt-1">Next to each multiplier's name, you'll see a percentage. This is your <strong>Trust Score</strong>, an intelligent metric that tells you how much you can trust your current multiplier setting based on your recorded shot data. The colored fill on the slider track visually represents this score.</p>
+                    <ul class="list-disc list-inside space-y-1 pl-2 mt-2">
+                        <li>The score is a blend of <strong>Accuracy</strong> (how close your setting is to the "ideal" value suggested by your shots) and <strong>Data Volume</strong> (how many shots the analysis is based on).</li>
+                        <li>The color gives you an at-a-glance quality check: <strong class="text-grass-green">Green</strong> (85%+) is high confidence, <strong class="text-bunker-yellow">Yellow</strong> (60-84%) is medium, and <strong class="text-red-500">Red</strong> (below 60%) means it's borderline or has low data volume.</li>
+                    </ul>
+                </div>
+                <ul class="list-disc list-inside space-y-2 pl-2">
+                    <li><strong>Shot Bias (Fade/Draw)</strong>: This is critical! Set this to match your typical shot shape. This changes how crosswinds are labeled. For a right-handed <strong>Fade</strong> player, a wind heading left-to-right <em>assists</em> the shot shape, while a wind heading right-to-left <em>opposes</em> it. The opposite is true for a Draw.</li>
+                    <div class="p-3 my-2 bg-blue-900/50 border-l-4 border-blue-500 rounded-r-lg text-sm">
+                        <h5 class="font-bold text-blue-300">Note for Left-Handed Players</h5>
+                        <p class="mt-1">First, go to <strong>Settings (⚙️) &rarr; Player</strong> and select "Left-Handed". The app will automatically swap the labels on the "Fade/Draw" button and the "Above/Below" lie slider to be intuitive for you. Simply select the shot shape that matches your play style; the underlying logic will handle the rest!</p>
+                    </div>
+
+                    <li><strong>Multiplier Sliders</strong>: Adjust the sliders for Headwind, Tailwind, and the two Crosswind types. Your changes are temporary until you click the yellow "Save" button that appears.</li>
+                    <li><strong>The Lock Buttons</strong>:
+                        <ul class="list-disc list-inside space-y-1 pl-4 mt-1">
+                            <li><strong>Safety Lock (🔗)</strong>: This is a simple UI lock. When active (highlighted yellow), all multiplier and roll controls are disabled to prevent accidental changes. It does <strong>not</strong> stop club presets from loading when you select a new club.</li>
+                            <li><strong>Analysis Lock (🔓/🔒)</strong>: This is a more powerful lock for testing. When active (🔒, highlighted yellow), it not only disables the controls but also <strong>freezes the current multipliers</strong>. They will <em>not</em> change when you select a different club, allowing you to test one set of multipliers across your whole bag.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Roll Calculation</strong>: This section calculates the final roll distance.
+                        <ul class="list-disc list-inside space-y-1 pl-4 mt-1">
+                            <li><strong>Base Roll</strong>: Sets the starting roll for the selected club. This is saved automatically for each club.</li>
+                            <li><strong>Green Firmness</strong>: Applies a multiplier to the Base Roll. You can customize these multipliers in the <strong>Settings (⚙️)</strong> menu.</li>
+                            <li><strong>Green Speed</strong>: Adjust to match course conditions. The default value of 151 represents a standard green speed, and the calculation uses this as a baseline (i.e., `your_speed / 151`).</li>
+                            <li><strong>Wind Sensitivity & Roll %</strong>: These settings control how much headwind and tailwind affect your roll distance.
+                                <div class="p-3 my-2 bg-gray-900/50 border-l-4 border-fairway-blue rounded-r-lg">
+                                    <h5 class="font-bold text-blue-300">Understanding Wind Sensitivity vs. Roll %</h5>
+                                    <p class="mt-1">These two settings work together but have different jobs. The <strong>Headwind/Tailwind Roll %</strong> sliders set the <em>base</em> effect of wind on roll, while <strong>Wind Sensitivity</strong> makes that effect <em>non-linear</em>.</p>
+                                    <ul class="list-disc list-inside space-y-1 pl-2 mt-2">
+                                        <li><strong>Roll %</strong> is a linear adjustment. If you set `Headwind Roll %` to 30%, a 10 mph headwind will reduce roll by 3 yards (10 * 30%), and a 20 mph headwind will reduce it by 6 yards (20 * 30%).</li>
+                                        <li><strong>Wind Sensitivity</strong> models how stronger winds have a disproportionately larger impact. At 0% sensitivity, the effect is linear (as described above). Above 0%, the effect becomes curved. A 20 mph wind might reduce your roll by *more* than double the amount of a 10 mph wind, simulating how a strong headwind can "kill" a ball's momentum.</li>
+                                    </ul>
+                                    <p class="mt-2 font-semibold text-white">Example:</p>
+                                    <p>Imagine your `Headwind Roll %` is set to <strong>30%</strong>.</p>
+                                    <ul class="list-disc list-inside space-y-1 pl-2 mt-2">
+                                        <li>A <strong>10 mph headwind</strong> has a base effect of a 3-yard reduction (10 * 30%).</li>
+                                        <li><strong>With 0% Sensitivity:</strong> A <strong>20 mph headwind</strong> has a base effect of 6 yards (20 * 30%). The final reduction is exactly <strong>6 yards</strong>.</li>
+                                        <li><strong>With 40% Sensitivity:</strong> The same <strong>20 mph headwind</strong> has its 6-yard base effect amplified by a "curve factor". The final reduction becomes <strong>10.8 yards</strong>, which is significantly more than double the effect of the 10 mph wind.</li>
+                                    </ul>
+                                </div>
+                            </li>
+                        </ul>
+                    </li>
+                    <h5 class="font-bold text-bunker-yellow mt-3">How to Tune Your Roll Numbers</h5>
+                    <p class="mt-1">Unlike wind multipliers, roll is not given automatic recommendations. It's a manual process of observation and adjustment. The goal is to make the calculated roll match reality, so your <strong>Final Adjustment</strong> is perfect. Here’s the recommended strategy:</p>
+                    <ol class="list-decimal list-inside space-y-2 pl-2 mt-2">
+                        <li>
+                            <strong>Set Your Baselines First:</strong> Go to <strong>Settings (⚙️) &rarr; Base Roll</strong>. For each club, enter a reasonable starting roll distance you'd expect on a flat, firm green with no wind. This is your most important starting point.
+                        </li>
+                        <li>
+                            <strong>Observe Total Distance in Calm/Light Winds:</strong> When you play, pay attention to where your ball finishes *after* it has rolled out, relative to the pin.
+                            <ul class="list-disc list-inside space-y-1 pl-4 mt-1">
+                                <li>If your shots consistently end up <strong>short</strong> of the pin, your calculated `Roll` is likely too high. Try decreasing the `Base Roll` for that club.</li>
+                                <li>If your shots consistently end up <strong>long</strong>, your calculated `Roll` is likely too low. Try increasing the `Base Roll`.</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Fine-Tune with Wind:</strong> Once your base rolls feel accurate on calm days, use shots in stronger winds to adjust the wind-related settings.
+                            <ul class="list-disc list-inside space-y-1 pl-4 mt-1">
+                                <li>If you are consistently short in a <strong>tailwind</strong> or long in a <strong>headwind</strong>, it means the wind's effect on roll is not being calculated aggressively enough. Your first step should be to increase the <strong>Headwind/Tailwind Roll %</strong> sliders.</li>
+                                <li>If you find that your adjustments are good in light winds but you are still ending up <strong>too long in a strong headwind</strong> (or too short in a strong tailwind), this is the perfect time to increase the <strong>Wind Sensitivity</strong>. This will amplify the roll adjustment specifically for stronger winds without changing the effect in lighter winds.</li>
+                            </ul>
+                        </li>
+                    </ol>
+                </ul>
+
+                <hr class="my-4 border-gray-700">
+                
+                <h3 class="text-lg font-bold text-grass-green border-b border-gray-600 pb-2 mb-2">3. The Analysis Tab</h3>
+                <p>This is where your recorded data turns into actionable advice.</p>                
+                <ul class="list-disc list-inside space-y-1 pl-2">
+                    <li><strong>Select Club for Analysis</strong>: Click any club button to see its specific data. The club selection here is independent of the Calculator tab.
+                        <ul class="list-disc list-inside space-y-1 pl-2">
+                            <li>Buttons with a <strong>yellow border and a number</strong> (e.g., <code>③</code>) have pending recommendations! The number indicates how many suggestions are available. On mobile, a yellow dot will also appear on the "Analysis" tab button itself.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Recommendations Section</strong>: This is the most powerful part of the app. Based on the shots you've recorded, the app will identify trends where your multipliers may be incorrect.
+                        <ul class="list-none pl-0">
+                            <li><strong>Example</strong>: "Based on 5 shots for Medium Wind, adjust Headwind Carry: 1.00 → 1.15". This means you are consistently coming up short in medium headwinds with this club, and it suggests a new multiplier.</li>
+                            <li><strong>Confidence</strong>: Each recommendation has a confidence level (Low, Medium, High) based on the consistency of your shot data. High confidence means the data is very clear.</li>
+                             <li class="mt-1 text-xs text-gray-400 italic">(Note: The app automatically detects and excludes statistical outliers to improve the accuracy of suggestions.)</li>
+                             <li class="mt-2"><strong>Actions</strong>:
+                                <ul class="list-disc list-inside space-y-1 pl-2">
+                                    <li><strong><code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Apply</code></strong>: Instantly accepts the recommendation, saves the new multiplier, and updates the calculator. The recommendation will disappear from the list.</li>
+                                    <li><strong><code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">View Shots</code></strong>: Opens a pop-up showing the exact shots that were used to generate that specific recommendation.</li>
+                                    <li><strong><code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">View Rec</code></strong>: Shows a "before and after" on the scatter plot. Yellow dots are your original shot results; hollow blue rings show where those shots <em>would have</em> landed with the recommended multiplier.</li>
+                                    <li class="mt-1 text-xs text-gray-400 italic">(Note: For a shot to be included in any recommendation analysis, the wind must have had a meaningful impact. The app automatically ignores any shot where the calculated headwind/tailwind component is less than 0.5 mph or the final crosswind aim adjustment is less than 0.5 yards. This ensures that only relevant data is used to generate your multipliers.)</li>
+                                </ul>
+                            </li>
+                        </ul>
+                        <h5 class="font-bold text-bunker-yellow mt-3">Understanding 'View All' vs. 'Since Update'</h5>
+                        <p class="mt-1">You may notice a discrepancy where the "Since Update" view shows recommendations but the main "View All" view (and the club badge) does not. This is by design and is key to the app's strategy.</p>
+                        <ul class="list-disc list-inside space-y-2 pl-2 mt-2">
+                            <li><strong>"View All" & The Global Badge (<code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">①</code>):</strong> This is your system of record. It looks at your <em>entire</em> shot history for a club. A recommendation only appears here (and triggers the yellow badge on the club button) when a trend is so strong it is statistically significant across your whole dataset. This is a lagging but highly reliable indicator.</li>
+                            <li><strong>"Since Update":</strong> This is your early warning system. It shows you recommendations based only on the small set of shots recorded <em>after</em> your last multiplier change. It's sensitive and great for seeing the immediate effect of your adjustments, but it's based on less data.</li>
+                        </ul>
+                        <h5 class="font-bold text-bunker-yellow mt-3">The Recommended Strategy</h5>
+                        <p class="mt-1">Use both views together to make confident, data-driven changes:</p>
+                        <ol class="list-decimal list-inside space-y-1 pl-2 mt-2">
+                            <li><strong>Acknowledge:</strong> When you see a recommendation in the "Since Update" view, treat it as valuable intelligence. Make a mental note of the trend, but don't apply the change yet.</li>
+                            <li><strong>Confirm:</strong> Continue to play and record more shots, paying special attention to that specific wind condition. You are now actively gathering data to confirm or deny the early trend.</li>
+                            <li><strong>Act:</strong> Wait for the global <strong>yellow badge (<code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">①</code>)</strong> to appear on the club button. This is your signal that the trend is confirmed and the recommendation is now based on a robust body of evidence. Apply the change with confidence.</li>
+                        </ol>
+                        <p class="mt-2">This two-step process prevents you from over-correcting based on a small sample size while still giving you immediate feedback on your performance.</p>
+                    </li>
+                    <li><strong>Shot Plot</strong>: This is a powerful visual tool for analyzing your shot dispersion. The goal is to get all your shots clustered as close to the center (0,0) as possible.
+                        <ul class="list-disc list-inside space-y-1 pl-2">
+                            <li><strong>Density "Heat Map"</strong>: The plot uses opacity blending. Areas with many shots clustered together will appear as a more solid, opaque yellow, making it easy to spot your common miss patterns.</li>
+                            <li><strong>Target Rings</strong>: The plot includes a green 1-yard ring and a blue 3-yard ring, like an archery target, to give you an immediate sense of your accuracy.</li>
+                            <li><strong>Outliers</strong>: Shots that are statistical outliers are marked with a <strong class="text-red-500">red cross (X)</strong>. These are automatically excluded from recommendation calculations to ensure accuracy but are still shown on the plot for your reference.</li>
+                            <li>The <strong><code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Since Update</code> / <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">View All</code> Button</strong> allows you to filter the plot. This button only appears if you have recorded shots for the selected club *after* applying a recommendation for it. Clicking <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Since Update</code> shows only these new shots, helping you verify if the change was effective.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Average Shot Errors Table</strong>: This table provides a detailed statistical breakdown of your average carry and aim errors, grouped by wind strength and direction. It helps you spot broader trends in your gameplay.
+                        <ul class="list-disc list-inside space-y-1 pl-4 mt-1">
+                            <li><strong>Interactive Filtering</strong>: The rows in this table are clickable! Click on any row (e.g., "High Wind Total" or "Headwind Carry") to filter the <strong>Shot Plot</strong> above. This will show you only the shots that belong to that specific category, helping you visually diagnose issues.</li>
+                            <li>The selected filter row will be highlighted in blue. To clear the filter, you can either click the same row again or click the <strong>`Clear Filter`</strong> button that appears above the plot.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Multiplier History & Analysis Tools</strong>: Click this button to open a modal with advanced tools.
+                        <ul class="list-disc list-inside space-y-1 pl-2">
+                            <li><strong>Multiplier History</strong>: This is the main feature of the modal. It shows a complete history of every multiplier change you have <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Applied</code> for the selected club.
+                                <ul class="list-disc list-inside space-y-1 pl-2">
+                                    <li>The history is organized into tabs for each wind strength (Low, Medium, etc.).</li>
+                                    <li>For each multiplier (e.g., Headwind Carry), you will see a mini line chart showing its value over time, giving you a quick visual of its trend.</li>
+                                    <li>Below the chart is a detailed list of each change, including the old and new values, the date it was applied, and the shot data context (shot count and confidence) that led to the recommendation or manual change.</li>
+                                    <li><strong>Export ZIP</strong>: At the top of the history modal, this button downloads a <code>.zip</code> file containing all the data for the selected club. Inside, you'll find a <code>history_data.csv</code> file with the raw history data and a folder of <code>.png</code> images, one for each trend chart.</li>
+                                </ul>
+                            </li>
+                            <li><strong>Performance Trends</strong>: This is a new tab in the modal that provides a high-level overview of your performance over time.
+                                <ul class="list-disc list-inside space-y-1 pl-2">
+                                    <li>Use the dropdown menu to select a specific club or view the <strong>Global</strong> trend across all clubs.</li>
+                                    <li>The chart plots your average <strong>Combined Error</strong> (yellow), <strong>Carry Error</strong> (green), and <strong>Aim Error</strong> (blue) for each day you've recorded shots.</li>
+                                    <li>Each point on the line represents a single day's aggregated performance. Hover over a point to see the exact date and how many shots were recorded.</li>
+                                    <li>A <strong>star icon (★)</strong> on a data point indicates that one or more multipliers were updated for the selected club on that day.</li>
+                                    <li>The goal is to see a downward trend in your error lines over time, which signifies that your multiplier adjustments are improving your accuracy.</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+                
+                <hr class="my-4 border-gray-700">
+                
+                <h3 class="text-lg font-bold text-grass-green border-b border-gray-600 pb-2 mb-2">Shot Weighting &amp; Sensitivity</h3>
+                <p>To ensure that your most accurate shots have the biggest impact on recommendations, the analysis engine uses a weighting system. Shots that land very close to the target are given more "weight" or importance than shots that are far away. This prevents a single, wildly inaccurate shot from skewing your personalized multipliers.</p>
+                <p>You can control this using the <strong>Weighting Sensitivity</strong> setting in the Analysis tab. Any shot with a total error (the direct distance from the target) greater than this value will be given a weight of 0% and ignored. For shots within the threshold, the weight decreases as the error increases. The table below shows an example using the default sensitivity of 10 yards:</p>
+                <div class="w-full overflow-x-auto rounded-lg border border-gray-600 my-3">
+                    <table class="min-w-full text-sm text-left text-gray-300">
+                        <thead class="bg-gray-700/50 text-xs uppercase">
+                            <tr>
+                                <th scope="col" class="px-4 py-2 font-semibold">
+                                    Total Shot Error (Yards)
+                                </th>
+                                <th scope="col" class="px-4 py-2 font-semibold text-center">
+                                    Weight in Analysis
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="bg-gray-800 border-b border-gray-700"><td class="px-4 py-2 font-medium text-white">0 (Perfect Shot)</td><td class="px-4 py-2 text-center font-bold text-grass-green">100%</td></tr>
+                            <tr class="bg-gray-800 border-b border-gray-700"><td class="px-4 py-2">1</td><td class="px-4 py-2 text-center">90%</td></tr>
+                            <tr class="bg-gray-800 border-b border-gray-700"><td class="px-4 py-2">2</td><td class="px-4 py-2 text-center">80%</td></tr>
+                            <tr class="bg-gray-800 border-b border-gray-700"><td class="px-4 py-2">3</td><td class="px-4 py-2 text-center">70%</td></tr>
+                            <tr class="bg-gray-800 border-b border-gray-700"><td class="px-4 py-2">4</td><td class="px-4 py-2 text-center">60%</td></tr>
+                            <tr class="bg-gray-800 border-b border-gray-700"><td class="px-4 py-2">5</td><td class="px-4 py-2 text-center">50%</td></tr>
+                            <tr class="bg-gray-800 border-b border-gray-700"><td class="px-4 py-2">6</td><td class="px-4 py-2 text-center">40%</td></tr>
+                            <tr class="bg-gray-800 border-b border-gray-700"><td class="px-4 py-2">7</td><td class="px-4 py-2 text-center">30%</td></tr>
+                            <tr class="bg-gray-800 border-b border-gray-700"><td class="px-4 py-2">8</td><td class="px-4 py-2 text-center">20%</td></tr>
+                            <tr class="bg-gray-800 border-b border-gray-700"><td class="px-4 py-2">9</td><td class="px-4 py-2 text-center">10%</td></tr>
+                            <tr class="bg-gray-800"><td class="px-4 py-2 font-medium text-white">10 (or more)</td><td class="px-4 py-2 text-center font-bold text-red-500">0% (Ignored)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <hr class="my-4 border-gray-700">
+
+                <h4 class="text-base font-semibold text-bunker-yellow mt-3 mb-1">Best Practices for Improving Your Multipliers</h4>
+                <p>The core goal of this app is to help you create a personalized set of multipliers. The best way to do this is through a continuous feedback loop:</p>                
+                <ol class="list-decimal list-inside space-y-1 pl-2">                    
+                    <li><strong>Record Shots</strong>: The more shots you record in the Tracker, the more data the app has to work with.</li>
+                    <li><strong>Apply Recommendations</strong>: When the Analysis tab gives you a high-confidence / medium-confidence recommendation, apply it.</li>
+                    <li><strong>Test the Change</strong>: Keep playing and recording shots with the new multiplier.</li>
+                    <li><strong>Filter and Verify</strong>: Use the <strong>`Since Update`</strong> button on the Shot Plot. This will show you only the shots you've hit *after* applying the new multiplier. If your new shots are clustered closer to the center of the plot, the change was successful!</li>
+                </ol>
+
+                <p class="mt-3"><strong>Strategy for Weighting Sensitivity:</strong> A good approach is to start with a higher, more lenient value like <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">10</code>. This helps gather data quickly. As your multipliers become more accurate and your shot consistency improves, you can progressively lower this value towards <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">5</code> to get recommendations based only on your most precise shots.</p>
+
+                <hr class="my-4 border-gray-700">
+
+                <h4 class="text-base font-semibold text-bunker-yellow mt-3 mb-1">Advanced Strategy: Player Profiles & Data Management</h4>
+                <p>As you become more advanced, you may want to manage different sets of data. The app's data management tools are designed to support this through the concept of "Player Profiles." A profile is simply a complete snapshot of your data (shots, multipliers, history, settings) saved to a file. The most common use for this is managing a "Perfect Swing" profile versus a "Natural Swing" profile.</p>
+                
+                <h5 class="font-bold text-white mt-3">The "Perfect vs. Natural Swing" Strategy</h5>
+                <p>Many users start by recording hundreds of shots using their game's "perfect swing" mechanic. This is an excellent way to establish a highly accurate, scientific baseline for your multipliers, as it removes swing variation from the equation. However, the ultimate goal is to have multipliers that are personalized to your own natural swing, which has slight variations.</p>
+                <p class="p-2 bg-red-900/50 border-l-4 border-red-500 rounded-r-lg"><strong>Do not mix perfect swing shots and natural swing shots in the same dataset.</strong> Doing so would "pollute" the data, asking the analysis engine to find a single multiplier that explains two different swing systems, leading to inaccurate recommendations for both.</p>
+                <p class="mt-2">Follow this workflow to transition from your perfect swing baseline to a personalized natural swing profile:</p>
+
+                <ol class="list-decimal list-inside space-y-2 pl-2 mt-2">
+                    <li><strong>Archive Your "Perfect Swing" Profile</strong><br>
+                    Once you are satisfied with your perfect swing data (e.g., after 1,000+ shots), you must save it. Go to <strong>Settings (⚙️) &rarr; Data Management</strong> and click <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Backup All Data</code>. Save this file somewhere safe (e.g., <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">perfect_swing_profile.json</code>). This is your master baseline that you can restore at any time.</li>
+                    
+                    <li><strong>Create Your "Natural Swing" Baseline</strong><br>
+                    On the same <strong>Data Management</strong> tab, click the <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Delete Shots</code> button. This is the key step. As the button's description notes, this removes <em>only</em> your shot history, leaving all of your finely-tuned multipliers from the perfect swings intact. You now have the ideal starting point: a clean slate for shots, but with world-class multipliers as your baseline.</li>
+
+                    <li><strong>Record Natural Swings (The Right Way)</strong><br>
+                    This is the most important part of the new process. The goal is to teach the app about your natural swing's tendencies, not your outright mistakes. When you go to the <strong>Tracker</strong> tab to record a shot, pay close attention to the checkboxes:
+                        <ul class="list-disc list-inside space-y-1 pl-4 mt-1">
+                            <li>If you feel you made a good, representative "natural" swing but the ball didn't go where the calculator suggested, leave both <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Include Carry Error</code> and <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Include Aim Error</code> checked. This is exactly the data the analysis engine needs.</li>
+                            <li>If you know you made a swing error (e.g., you badly pushed the shot or hit it thin), uncheck the corresponding box before recording. If you pushed it 10 yards right, uncheck <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Include Aim Error</code>. This tells the app, "Ignore the aim data for this shot; the error was my fault, not the wind calculation." This prevents swing flaws from polluting your data.</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h5 class="font-bold text-white mt-4">The "Multiplier Transplant": A Powerful Update Workflow</h5>
+                <p>You should not combine shot histories, but you can and should "transplant" superior multipliers from your perfect profile into your natural profile. This keeps your natural profile's baseline as accurate as possible.</p>
+                <p class="mt-2">Imagine you've recorded 500 natural shots, but you decide to go back and record 200 more perfect shots, which results in even better perfect multipliers. Here’s how to get those improvements into your natural profile:</p>
+
+                <ol class="list-decimal list-inside space-y-2 pl-2 mt-2">
+                    <li><strong>Update Your Perfect Profile</strong><br>
+                    First, back up your current natural swing data using <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Backup All Data</code> (e.g., <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">natural_swing_profile.json</code>). Then, use <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Import All Data</code> to restore your original <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">perfect_swing_profile.json</code>. Record your new perfect shots and apply any new recommendations.</li>
+
+                    <li><strong>Export ONLY the Updated Multipliers</strong><br>
+                    Once your perfect multipliers are updated, go to <strong>Settings (⚙️) &rarr; Data Management</strong> and click <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Backup Multipliers</code>. Save this file (e.g., <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">updated_perfect_multipliers.json</code>). This file contains <em>only</em> your multiplier values and their history.</li>
+
+                    <li><strong>Perform the Transplant</strong><br>
+                    Use <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Import All Data</code> again to restore your <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">natural_swing_profile.json</code>. Your 500 natural shots are now back. Finally, click <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">Import Multipliers</code> and select the <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">updated_perfect_multipliers.json</code> file. This overwrites the multipliers in your natural profile with the new, more accurate ones.</li>
+                </ol>
+
+                <h5 class="font-bold text-white mt-3">The Result: Immediate New Recommendations</h5>
+                <p>After performing the transplant, go to the <strong>Analysis</strong> tab. You will very likely see new recommendations appear immediately. This is the desired outcome! The app has re-analyzed all your existing natural shots against the new, superior baseline and has instantly found the subtle, consistent differences between the "perfect" model and your personal swing. Applying these new recommendations is the first step in re-personalizing your data against the better baseline.</p>
+
+
+                <hr class="my-4 border-gray-700">
+
+                <h3 class="text-lg font-bold text-grass-green border-b border-gray-600 pb-2 mb-2">4. The Settings Modal (⚙️)</h3>
+                <p>The settings icon (⚙️) in the bottom-right of the Calculator card's footer opens a modal for global settings and data management.</p>
+                <ul class="list-disc list-inside space-y-1 pl-2">
+                    <li><strong>Data Management</strong>: This tab now contains all buttons for backing up, importing, and resetting your data. This is the most important place for ensuring your data is safe.</li>
+                    <li><strong>Green Firmness</strong>: Here you can customize the roll multipliers for each of the seven green firmness levels. Your changes are saved automatically.</li>
+                    <li><strong>Green Grids</strong>: This tab allows you to set the yards-per-grid multiplier based on your character's putting skill, ensuring the <code class="bg-gray-900 text-bunker-yellow font-mono px-1 py-0.5 rounded-md text-sm">g</code> values in the calculator are accurate for you.</li>
+                    <li><strong>Club Bag Setup</strong>: This is where you manage your clubs.
+                        <ul class="list-disc list-inside space-y-1 pl-4 mt-1">
+                            <li>Use the checkboxes to select up to <strong>13 clubs</strong> for your "Active Bag". The counter at the top tracks your selections.</li>
+                            <li>Clubs that are not in your active bag will appear "dulled" on the main calculator screen.</li>
+                            <li>You can also customize the minimum and maximum carry distance for each of your clubs. This data is used for the range display on the calculator and for the Range Chart.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Range Chart</strong>: This tab provides a visual chart of your club gapping.
+                        <ul class="list-disc list-inside space-y-1 pl-4 mt-1">
+                            <li>Use the filter buttons (<strong>All, Active Bag, Woods, Long Game, Irons & Hybrids, Wedges</strong>) to focus on specific parts of your bag and analyze your distance gaps and overlaps.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Calculator</strong>: This tab allows you to choose the behavior of the DTP counter on the main calculator screen, switching between "Additive" and "Cyclic" modes.</li>
+                    <li><strong>Multiplier Status</strong>: This new tab gives you a high-level overview of your personalization progress.
+                        <ul class="list-disc list-inside space-y-1 pl-4 mt-1">
+                            <li>At the top, you'll see a summary of how many multipliers you have manually customized, how many are confirmed as "perfect" (100% Trust Score), and how many are left to analyze.</li>
+                            <li>The main list shows the analysis progress for every club, including a progress bar and a ratio (e.g., "12 / 28 analyzed").</li>
+                            <li>Click the <strong>Details</strong> button for any club to see a full list of its 28 multipliers. This detailed view shows:
+                                <ul class="list-disc list-inside space-y-1 pl-4 mt-1">
+                                    <li><strong class="text-grass-green">Perfect Defaults (✅)</strong>: Default values that your shot data has proven to be 100% correct.</li>
+                                    <li><strong class="text-white">Customized Values (✏️)</strong>: Multipliers you have manually changed or applied from a recommendation, showing the before-and-after values.</li>
+                                    <li><strong class="text-gray-400">Default Values</strong>: Multipliers that are still at their default setting, along with their current Trust Score in parentheses.</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+                <p class="mt-4">By consistently using the <strong>Calculator</strong>, <strong>Tracker</strong>, and <strong>Analysis</strong> tabs together, you can fine-tune your multipliers and develop a highly accurate and personalized system for handling any weather conditions. Good luck!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Settings Modal -->
+    <div id="settingsModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-card-bg rounded-xl shadow-2xl w-full max-w-5xl max-h-[95vh] flex flex-col border border-gray-600">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h3 class="text-lg font-bold text-white">Settings & Data</h3>
+                <button id="closeSettingsModalButton" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+            </div>
+            <!-- NEW: Tabbed content for Settings Modal -->
+            <div id="settingsModalContent" class="p-4 flex flex-col overflow-hidden">
+                <div id="settingsTabContainer" class="flex-shrink-0 flex border-b border-gray-600 mb-4">
+                    <button class="history-tab-button px-4 py-2 text-sm font-medium text-gray-400 hover:text-bunker-yellow" data-target="settings-panel-player">Player</button>
+                    <button class="history-tab-button active px-4 py-2 text-sm font-medium text-gray-400 hover:text-bunker-yellow" data-target="settings-panel-data">Data Management</button>
+                    <button class="history-tab-button px-4 py-2 text-sm font-medium text-gray-400 hover:text-bunker-yellow" data-target="settings-panel-ranges">Club Ranges</button>
+                    <button class="history-tab-button px-4 py-2 text-sm font-medium text-gray-400 hover:text-bunker-yellow" data-target="settings-panel-range-chart">Range Chart</button>
+                    <button class="history-tab-button px-4 py-2 text-sm font-medium text-gray-400 hover:text-bunker-yellow" data-target="settings-panel-base-roll">Base Roll</button>
+                    <button class="history-tab-button px-4 py-2 text-sm font-medium text-gray-400 hover:text-bunker-yellow" data-target="settings-panel-roll">Roll Settings</button>
+                    <button class="history-tab-button px-4 py-2 text-sm font-medium text-gray-400 hover:text-bunker-yellow" data-target="settings-panel-firmness">Green Firmness</button>
+                    <button class="history-tab-button px-4 py-2 text-sm font-medium text-gray-400 hover:text-bunker-yellow" data-target="settings-panel-grids">Green Grids</button>
+                    <button class="history-tab-button px-4 py-2 text-sm font-medium text-gray-400 hover:text-bunker-yellow" data-target="settings-panel-calculator">Calculator</button>
+                    <button class="history-tab-button px-4 py-2 text-sm font-medium text-gray-400 hover:text-bunker-yellow" data-target="settings-panel-stopwatch">Stopwatch</button>
+                </div>
+                <div id="settingsPanelContainer" class="flex-grow overflow-y-auto pr-2">
+                    <!-- Player Settings Panel -->
+                    <div id="settings-panel-player" class="hidden space-y-4 text-gray-300 text-sm leading-relaxed">
+                        <h4 class="text-base font-semibold text-bunker-yellow border-b border-gray-600 pb-2 mb-3">Player</h4>
+                        <p class="text-xs text-gray-400 -mt-2 mb-4">Select your handedness. This correctly interprets the "Fade/Draw" button & ball "above/below" feet slider for your swing.</p>
+                        <div id="playerHandednessContainer" class="grid grid-cols-2 gap-3">
+                            <button data-hand="right" class="dtp-mode-btn bg-gray-700 hover:bg-grass-green/50 p-2 rounded-md transition duration-150">
+                                <span class="font-bold text-base">Right-Handed</span>
+                            </button>
+                            <button data-hand="left" class="dtp-mode-btn bg-gray-700 hover:bg-grass-green/50 p-2 rounded-md transition duration-150">
+                                <span class="font-bold text-base">Left-Handed</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Data Management Panel -->
+                    <div id="settings-panel-data" class="space-y-2">
+                        <!-- NEW: Data Source Tracking -->
+                        <div class="bg-gray-800/50 p-3 rounded-lg border border-gray-600 mb-4 space-y-2 text-sm">
+                            <h4 class="text-base font-semibold text-bunker-yellow text-center">Data Sources</h4>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Shot Data Source:</span>
+                                <span id="shotDataSourceDisplay" class="font-bold text-white">--</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Multiplier Source:</span>
+                                <span id="multiplierDataSourceDisplay" class="font-bold text-white">--</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Settings Source:</span>
+                                <span id="settingsDataSourceDisplay" class="font-bold text-white">--</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <button id="backupAllDataButton" class="w-full text-sm font-semibold text-grass-green hover:text-emerald-300 transition duration-150 p-2 rounded-md border border-grass-green/50">Backup All Data</button>
+                            <button id="importAllDataButton" class="w-full text-sm font-semibold text-fairway-blue hover:text-blue-300 transition duration-150 p-2 rounded-md border border-fairway-blue/50">Import All Data</button>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button id="backupShotsButton" class="w-full text-sm font-semibold text-grass-green hover:text-emerald-300 transition duration-150 p-2 rounded-md border border-grass-green/50">Backup Shots</button>
+                            <button id="importShotsButton" class="w-full text-sm font-semibold text-fairway-blue hover:text-blue-300 transition duration-150 p-2 rounded-md border border-fairway-blue/50">Import Shots</button>
+                            <button id="clearAllShotsButton" class="w-full text-sm font-semibold text-red-500 hover:text-red-400 transition duration-150 p-2 rounded-md border border-red-500/50">Delete Shots</button>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button id="backupPresetsButton" class="w-full text-sm font-semibold text-grass-green hover:text-emerald-300 transition duration-150 p-2 rounded-md border border-grass-green/50">Backup Multipliers</button>
+                            <button id="importPresetsButton" class="w-full text-sm font-semibold text-fairway-blue hover:text-blue-300 transition duration-150 p-2 rounded-md border border-fairway-blue/50">Import Multipliers</button>
+                            <button id="resetMultipliersButton" class="w-full text-sm font-semibold text-red-500 hover:text-red-400 transition duration-150 p-2 rounded-md border border-red-500/50 hidden">Reset All Multipliers</button>
+                        </div>
+                        <!-- NEW: Settings Sync -->
+                        <div class="border-t border-gray-600 pt-2 mt-2">
+                            <div class="grid grid-cols-3 gap-2">
+                                <button id="backupSettingsButton" class="w-full text-sm font-semibold text-grass-green hover:text-emerald-300 transition duration-150 p-2 rounded-md border border-grass-green/50">Backup Settings</button>
+                                <button id="importSettingsButton" class="w-full text-sm font-semibold text-fairway-blue hover:text-blue-300 transition duration-150 p-2 rounded-md border border-fairway-blue/50">Import Settings</button>
+                                <button id="resetSettingsButton" class="w-full text-sm font-semibold text-red-500 hover:text-red-400 transition duration-150 p-2 rounded-md border border-red-500/50">Reset Settings</button>
+                            </div>
+                            <p class="text-center text-xs text-gray-400 mt-1">Syncs all global app settings (Player Handedness, Club Bag/Ranges, Greens Roll & Firmness, Calculator, Stopwatch Cues, Power % Adjustment. Does not affect Shot History or Wind Multipliers.</p>
+                        </div>
+                        <!-- NEW: Export All Multipliers to CSV -->
+                        <div class="border-t border-gray-600 pt-2 mt-2">
+                            <button id="exportAllPresetsCsvButton" class="w-full text-sm font-semibold text-bunker-yellow hover:text-yellow-300 transition duration-150 p-2 rounded-md border border-bunker-yellow/50">Export All Multipliers to CSV</button>
+                            <p class="text-center text-xs text-gray-400 mt-1">Exports a CSV of all current multiplier values for all clubs.</p>
+                        </div>
+                        <div class="border-t border-red-500/30 pt-2 mt-2">
+                            <button id="resetAllDataButton" class="w-full text-sm font-bold text-red-500 hover:text-red-400 transition duration-150 p-2 rounded-md border border-red-500/50 bg-red-900/30">Reset All Data</button>
+                            <p class="text-center text-xs text-gray-500 mt-1">Deletes all shots, multipliers, and history.</p>
+                        </div>
+                    </div>
+                    <!-- Green Firmness Panel -->
+                    <div id="settings-panel-firmness" class="hidden space-y-4 text-gray-300 text-sm leading-relaxed">
+                        <h4 class="text-base font-semibold text-bunker-yellow border-b border-gray-600 pb-2 mb-3">Green Firmness Multipliers</h4>
+                        <p class="text-xs text-gray-400 -mt-2 mb-4">Customize the roll multiplier for each firmness level. 'Firm' is the baseline at 1.00. Your changes are saved automatically.</p>
+                        <div id="greenFirmnessSettingsContainer" class="grid grid-cols-2 gap-x-8 gap-y-3">
+                            <!-- Firmness inputs will be injected here by JS -->
+                        </div>
+                        <div class="mt-4 text-center">
+                            <button id="resetFirmnessDefaultsButton" class="text-xs font-semibold text-red-500 hover:text-red-400 transition duration-150 px-3 py-1 rounded-md border border-red-500/50">Reset to Defaults</button>
+                        </div>
+                    </div>
+                    <!-- Green Grids Panel -->
+                    <div id="settings-panel-grids" class="hidden space-y-4 text-gray-300 text-sm leading-relaxed">
+                        <h4 class="text-base font-semibold text-bunker-yellow border-b border-gray-600 pb-2 mb-3">Green Grid Multiplier</h4>
+                        <p class="text-xs text-gray-400 -mt-2 mb-4">This converts yardage adjustments to green grids. Select the button that matches your character's putting skill level for accurate conversions.</p>
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-sm font-medium text-gray-300">Current Multiplier:</h3>
+                            <span id="currentGridMultiplierDisplay" class="text-sm font-semibold text-grass-green leading-none">0.93</span>
+                            <input type="hidden" id="greenGridsMultiplier" value="0.93" min="0.00" max="2.00" step="0.01" class="multiplier-slider">
+                        </div>
+                        <div class="grid grid-cols-3 gap-2"> 
+                            <button data-value="1.36" class="grid-preset-btn bg-gray-700 hover:bg-grass-green/50 text-sm font-semibold px-2 py-1 rounded-md transition duration-150 disabled:opacity-50">0 skill</button>
+                            <button data-value="1.25" class="grid-preset-btn bg-gray-700 hover:bg-grass-green/50 text-sm font-semibold px-2 py-1 rounded-md transition duration-150 disabled:opacity-50">0 boost</button>
+                            <button data-value="1.15" class="grid-preset-btn bg-gray-700 hover:bg-grass-green/50 text-sm font-semibold px-2 py-1 rounded-md transition duration-150 disabled:opacity-50">1 boost</button>
+                            <button data-value="1.03" class="grid-preset-btn bg-gray-700 hover:bg-grass-green/50 text-sm font-semibold px-2 py-1 rounded-md transition duration-150 disabled:opacity-50">2 boost</button>
+                            <button data-value="0.93" class="grid-preset-btn active bg-gray-700 hover:bg-grass-green/50 text-sm font-semibold px-2 py-1 rounded-md transition duration-150 disabled:opacity-50">3 boost</button>
+                            <button data-value="0.82" class="grid-preset-btn bg-gray-700 hover:bg-grass-green/50 text-sm font-semibold px-2 py-1 rounded-md transition duration-150 disabled:opacity-50">4 boost</button>
+                        </div>
+                    </div>
+                    <!-- NEW: Club Ranges Panel -->
+                    <div id="settings-panel-ranges" class="hidden space-y-4 text-gray-300 text-sm leading-relaxed">
+                        <div class="flex justify-between items-center border-b border-gray-600 pb-2 mb-3">
+                            <h4 class="text-base font-semibold text-bunker-yellow">Club Bag Setup</h4>
+                            <span id="activeClubCounter" class="text-sm font-bold text-white">Active Clubs: 0 / 13</span>
+                        </div>
+                        <p class="text-xs text-gray-400 -mt-2 mb-4">Enter your normal (calm conditions) carry distances for each club. Changes are saved automatically.</p>
+                        <div id="clubRangesSettingsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
+                            <!-- Club range inputs will be injected here by JS -->
+                        </div>
+                        <div class="mt-4 text-center">
+                            <button id="resetClubRangesButton" class="text-xs font-semibold text-red-500 hover:text-red-400 transition duration-150 px-3 py-1 rounded-md border border-red-500/50">Reset to Defaults</button>
+                        </div>
+                    </div>
+                    <!-- NEW: Club Range Chart Panel -->
+                    <div id="settings-panel-range-chart" class="hidden">
+                        <h4 class="text-base font-semibold text-bunker-yellow border-b border-gray-600 pb-2 mb-3">Club Carry Range Chart</h4>
+                        <p class="text-xs text-gray-400 -mt-2 mb-4">This chart visualizes the min/max carry distances for each club, making it easy to spot gaps and overlaps.</p>
+                        <!-- NEW: Filter buttons to switch chart views -->
+                        <div id="rangeChartFilterContainer" class="flex justify-center gap-2 mb-4">
+                            <button class="range-chart-filter-btn active px-3 py-1 text-sm font-semibold rounded-md" data-filter="all">All</button>
+                            <button class="range-chart-filter-btn px-3 py-1 text-sm font-semibold rounded-md" data-filter="active">Active Bag</button>
+                            <button class="range-chart-filter-btn px-3 py-1 text-sm font-semibold rounded-md" data-filter="woods">Woods</button>
+                            <button class="range-chart-filter-btn px-3 py-1 text-sm font-semibold rounded-md" data-filter="long-game">Long Game</button>
+                            <button class="range-chart-filter-btn px-3 py-1 text-sm font-semibold rounded-md" data-filter="irons">Irons & Hybrids</button>
+                            <button class="range-chart-filter-btn px-3 py-1 text-sm font-semibold rounded-md" data-filter="wedges">Wedges</button>
+                        </div>
+                        <!-- The chart will be rendered inside this canvas. A fixed height container is used. -->
+                        <div class="relative h-[450px]"> 
+                            <canvas id="clubRangeChartCanvas"></canvas>
+                        </div>
+                    </div>
+                    <!-- NEW: Roll Settings Panel -->
+                    <div id="settings-panel-roll" class="hidden space-y-4 text-gray-300 text-sm leading-relaxed">
+                        <h4 class="text-base font-semibold text-bunker-yellow border-b border-gray-600 pb-2 mb-3">Global Roll Settings</h4>
+                        <p class="text-xs text-gray-400 -mt-2 mb-4">Customize the global parameters for roll calculation. Changes are saved automatically.</p>
+                        <div id="rollSettingsContainer" class="grid grid-cols-2 gap-x-8 gap-y-3">
+                            <!-- Roll setting inputs will be injected here by JS -->
+                            <div class="flex justify-between items-center"><label for="settings-greenSpeed" class="font-medium text-gray-300">Green Speed</label><input type="number" id="settings-greenSpeed" class="settings-input"></div>
+                            <div class="flex justify-between items-center"><label for="settings-windRollSensitivity" class="font-medium text-gray-300">Wind Sensitivity %</label><input type="number" id="settings-windRollSensitivity" class="settings-input"></div>
+                            <div class="flex justify-between items-center"><label for="settings-headwindRollPercent" class="font-medium text-gray-300">Headwind Roll %</label><input type="number" id="settings-headwindRollPercent" class="settings-input"></div>
+                            <div class="flex justify-between items-center"><label for="settings-tailwindRollPercent" class="font-medium text-gray-300">Tailwind Roll %</label><input type="number" id="settings-tailwindRollPercent" class="settings-input"></div>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <button id="resetRollDefaultsButton" class="text-xs font-semibold text-red-500 hover:text-red-400 transition duration-150 px-3 py-1 rounded-md border border-red-500/50">Reset to Defaults</button>
+                        </div>
+                    </div>
+                    <!-- NEW: Base Roll Defaults Panel -->
+                    <div id="settings-panel-base-roll" class="hidden space-y-4 text-gray-300 text-sm leading-relaxed">
+                        <h4 class="text-base font-semibold text-bunker-yellow border-b border-gray-600 pb-2 mb-3">Club Base Roll Defaults</h4>
+                        <p class="text-xs text-gray-400 -mt-2 mb-4">Customize the default base roll (in yards) for each club. These values are used in the roll calculation before any modifiers are applied. Changes are saved automatically.</p>
+                        <div id="baseRollSettingsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
+                            <!-- Base Roll inputs will be injected here by JS -->
+                        </div>
+                        <div class="mt-4 text-center">
+                            <button id="resetBaseRollDefaultsButton" class="text-xs font-semibold text-red-500 hover:text-red-400 transition duration-150 px-3 py-1 rounded-md border border-red-500/50">Reset All to Defaults</button>
+                        </div>
+                    </div>
+                    <!-- NEW: Calculator Settings Panel -->
+                    <div id="settings-panel-calculator" class="hidden space-y-4 text-gray-300 text-sm leading-relaxed">
+                        <h4 class="text-base font-semibold text-bunker-yellow border-b border-gray-600 pb-2 mb-3">DTP Counter Style</h4>
+                        <p class="text-xs text-gray-400 -mt-2 mb-4">Choose how the DTP (Distance to Pin) buttons on the calculator work.</p>
+                        <div id="dtpCounterModeContainer" class="grid grid-cols-2 gap-3"> 
+                            <button data-mode="additive" class="dtp-mode-btn bg-gray-700 hover:bg-grass-green/50 p-2 rounded-md transition duration-150">
+                                <span class="font-bold text-base">Additive</span>
+                                <span class="block text-xs text-gray-400 mt-1">Buttons add/subtract from the total distance (e.g., 199 + 1 = 200).</span>
+                            </button>
+                            <button data-mode="cyclic" class="dtp-mode-btn bg-gray-700 hover:bg-grass-green/50 p-2 rounded-md transition duration-150">
+                                <span class="font-bold text-base">Cyclic</span>
+                                <span class="block text-xs text-gray-400 mt-1">Buttons change only their specific digit, cycling from 9 to 0 (e.g., 199 + 1 = 190).</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- NEW: Stopwatch Cues Panel -->
+                    <div id="settings-panel-stopwatch" class="hidden space-y-4 text-gray-300 text-sm leading-relaxed">
+                        <h4 class="text-base font-semibold text-bunker-yellow border-b border-gray-600 pb-2 mb-3">Green Reading Cues</h4>
+                        <!-- NEW: Beep Toggle -->
+                        <div class="flex items-center space-x-4">
+                            <label class="flex items-center text-sm text-gray-300 font-medium cursor-pointer">
+                                <input type="checkbox" id="stopwatchBeepToggle" class="form-checkbox h-5 w-5 text-grass-green rounded border-gray-600 focus:ring-grass-green">
+                                <span class="ml-3">Enable Beep Sound on Click</span>
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-400 -mt-2 mb-4">Define up to 10 custom time ranges. When the stopwatch stops within a range, the specified text or emoji will appear. Changes are saved automatically.</p>
+                        <div id="stopwatchCuesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
+                            <!-- Stopwatch cue inputs will be injected here by JS -->
+                        </div>
+                        <!-- NEW: Visual Timeline for Stopwatch Cues -->
+                        <div id="stopwatchCuesTimeline" class="timeline-track"></div>
+                        <div class="mt-4 text-center">
+                            <button id="resetStopwatchCuesButton" class="text-xs font-semibold text-red-500 hover:text-red-400 transition duration-150 px-3 py-1 rounded-md border border-red-500/50">Reset to Defaults</button>
+                        </div>
+
+                        <!-- NEW: Lie Reading Cues Section -->
+                        <hr class="my-6 border-gray-700">
+                        <h4 class="text-base font-semibold text-bunker-yellow border-b border-gray-600 pb-2 mb-3">Lie Reading Cues</h4>
+                        <p class="text-xs text-gray-400 -mt-2 mb-4">Define time ranges to estimate slope percentages for approach shot lies. These are active when the stopwatch is in 'Lie' mode.</p>
+                        <div id="lieCuesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
+                            <!-- Lie reading cue inputs will be injected here by JS -->
+                        </div>
+                        <!-- NEW: Visual Timeline for Lie Cues -->
+                        <div id="lieCuesTimeline" class="timeline-track"></div>
+                        <div class="mt-4 text-center">
+                            <button id="resetLieCuesButton" class="text-xs font-semibold text-red-500 hover:text-red-400 transition duration-150 px-3 py-1 rounded-md border border-red-500/50">Reset to Defaults</button>
+                        </div>
+
+                        <!-- NEW: Arrow Suggestion Formula Settings -->
+                        <hr class="my-6 border-gray-700">
+                        <h4 class="text-base font-semibold text-bunker-yellow border-b border-gray-600 pb-2 mb-3">Arrow Suggestion Formula</h4>
+                        <!-- NEW: Live Preview Pane -->
+                        <div class="mb-4 p-2 bg-gray-900/50 rounded-lg border border-gray-700">
+                            <div class="text-center">
+                                <span class="text-sm font-bold text-bunker-yellow">LIVE PREVIEW:</span>
+                                <span id="cupSuggestionPreview" class="text-xl font-bold text-white ml-2">0</span>
+                            </div>
+                            <!-- NEW: Container for the preview of additions -->
+                            <div id="cupSuggestionPreviewAdditions" class="mt-2 h-10 flex items-center justify-center overflow-x-auto whitespace-nowrap gap-x-3"></div>
+                        </div>
+                        <!-- MOVED: Formula inputs are now directly below the preview -->
+                        <div id="cupSuggestionSettingsContainer" class="grid grid-cols-1 gap-y-4 mt-4">
+                            <!-- Confidence Threshold -->
+                            <div class="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                                <div class="flex justify-between items-center">
+                                    <label for="cupSuggestionConfidenceThresholdInput" class="font-medium text-gray-300">Confidence Threshold <span class="text-xs text-gray-500 font-normal">(Min. score for a timing to be 'high-trust')</span><span class="block text-xs text-bunker-yellow font-semibold mt-1">(Range: 0-100)</span></label>
+                                    <div class="flex items-center">
+                                        <button type="button" data-target="cupSuggestionConfidenceThresholdInput" data-step="-1" class="roll-increment-btn text-white rounded-l-md bg-fairway-blue/90 hover:bg-fairway-blue transition-colors duration-150">-</button>
+                                        <input type="number" id="cupSuggestionConfidenceThresholdInput" step="1" min="0" max="100" class="w-20 bg-gray-700 text-white p-1 text-lg text-center font-bold border-y border-gray-600 focus:border-bunker-yellow focus:ring-0 h-[2.5rem] settings-input">
+                                        <button type="button" data-target="cupSuggestionConfidenceThresholdInput" data-step="1" class="roll-increment-btn text-white rounded-r-md bg-grass-green/90 hover:bg-grass-green transition-colors duration-150">+</button>
+                                    </div>
+                                </div>
+                                <div class="mt-3 pt-3 border-t border-gray-600 text-xs text-gray-400 space-y-1">
+                                    <p>This value is compared against a "Trust Score" which is calculated as a percentage (from 0% to 100%). A value outside of this range would not be meaningful. The default is 75.</p>
+                                    <ul class="list-disc list-inside pl-2 space-y-1">
+                                        <li><strong>Lower this value (e.g., to 65) if:</strong> You are a very precise timer and feel that even your 'yellow' reads are reliable. This gives your good reads more power to cancel out noise from a single bad read.</li>
+                                        <li><strong>Raise this value (e.g., to 85) if:</strong> You only want to trust timings that are dead-center. This makes the system rely more on the trend of your 'low-trust' reads and less on the dampening effect.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <!-- Leeway Factor -->
+                            <div class="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                                <div class="flex justify-between items-center">
+                                    <label for="cupSuggestionLeewayFactorInput" class="font-medium text-gray-300">Leeway Factor <span class="text-xs text-gray-500 font-normal">(Controls sensitivity of the final suggestion)</span><span class="block text-xs text-bunker-yellow font-semibold mt-1">(Range: 0-2)</span></label>
+                                    <div class="flex items-center">
+                                        <button type="button" data-target="cupSuggestionLeewayFactorInput" data-step="-0.05" class="roll-increment-btn text-white rounded-l-md bg-fairway-blue/90 hover:bg-fairway-blue transition-colors duration-150">-</button>
+                                        <input type="number" id="cupSuggestionLeewayFactorInput" step="0.05" min="0" max="2" class="w-20 bg-gray-700 text-white p-1 text-lg text-center font-bold border-y border-gray-600 focus:border-bunker-yellow focus:ring-0 h-[2.5rem] settings-input">
+                                        <button type="button" data-target="cupSuggestionLeewayFactorInput" data-step="0.05" class="roll-increment-btn text-white rounded-r-md bg-grass-green/90 hover:bg-grass-green transition-colors duration-150">+</button>
+                                    </div>
+                                </div>
+                                <div class="mt-3 pt-3 border-t border-gray-600 text-xs text-gray-400 space-y-1">
+                                    <p>This is a multiplier for the calculated error. A value of 0 would disable all suggestions, a value of 1 uses the raw calculated error, and values much higher than 2 would likely make suggestions overly sensitive. The default is 0.75.</p>
+                                    <ul class="list-disc list-inside pl-2 space-y-1">
+                                        <li><strong>Lower this value (e.g., to 0.60) if:</strong> You feel the arrows appear too frequently and want the system to be less "twitchy". This requires a stronger, more consistent trend before a suggestion is shown.</li>
+                                        <li><strong>Raise this value (e.g., to 0.90) if:</strong> You want the earliest possible warning of a potential misread and don't mind more frequent suggestions based on smaller trends.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <!-- Arrow Threshold -->
+                            <div class="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                                <div class="flex justify-between items-center">
+                                    <label for="cupSuggestionArrowThresholdInput" class="font-medium text-gray-300">Arrow Threshold <span class="text-xs text-gray-500 font-normal">(Min. error needed to show first arrow)</span><span class="block text-xs text-bunker-yellow font-semibold mt-1">(Range: 0-3)</span></label>
+                                    <div class="flex items-center">
+                                        <button type="button" data-target="cupSuggestionArrowThresholdInput" data-step="-0.05" class="roll-increment-btn text-white rounded-l-md bg-fairway-blue/90 hover:bg-fairway-blue transition-colors duration-150">-</button>
+                                        <input type="number" id="cupSuggestionArrowThresholdInput" step="0.05" min="0" max="3" class="w-20 bg-gray-700 text-white p-1 text-lg text-center font-bold border-y border-gray-600 focus:border-bunker-yellow focus:ring-0 h-[2.5rem] settings-input">
+                                        <button type="button" data-target="cupSuggestionArrowThresholdInput" data-step="0.05" class="roll-increment-btn text-white rounded-r-md bg-grass-green/90 hover:bg-grass-green transition-colors duration-150">+</button>
+                                    </div>
+                                </div>
+                                <div class="mt-3 pt-3 border-t border-gray-600 text-xs text-gray-400 space-y-1">
+                                    <p>This is the minimum calculated error value required to show the first suggestion arrow. A value of 0 shows an arrow for even the tiniest calculated error, while a very high value means suggestions will almost never appear. The default is 0.5.</p>
+                                    <ul class="list-disc list-inside pl-2 space-y-1">
+                                        <li><strong>Lower this value (e.g., to 0.40) if:</strong> You want to be notified of even the slightest lean in your timings, allowing the first arrow to appear with less evidence.</li>
+                                        <li><strong>Raise this value (e.g., to 0.70) if:</strong> You find single arrows distracting and only want to be alerted when there is a very strong trend that would likely show two or more arrows.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <button id="resetCupSuggestionSettingsButton" class="text-xs font-semibold text-red-500 hover:text-red-400 transition duration-150 px-3 py-1 rounded-md border border-red-500/50">Reset to Defaults</button>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-6 mb-2">Fine-tune the sensitivity of the cup break arrow suggestions. Changes are saved automatically and can be reset to their defaults at any time.</p>
+                        <!-- NEW: Explanation of the formula -->
+                        <div class="p-3 my-4 bg-gray-900/50 border-l-4 border-blue-500 rounded-r-lg text-xs space-y-4">
+                            <div>
+                                <h5 class="font-bold text-blue-300">How It Works</h5>
+                                <p class="mt-1">The arrow suggestions (▲/▼) analyze the "Trust Score" of each timed read. A time in the center of a cue's window is a high-trust read. A time near the edge is a low-trust read, suggesting you might be between cues. The formula calculates a "potential error" for each low-trust read, indicating how strongly it leans towards the next higher or lower cup value. High-trust reads (above the <strong>Confidence Threshold</strong>) don't generate error, but instead "dampen" the error from low-trust reads, increasing confidence in the overall result.</p>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Notes Modal -->
+    <script type="module" src="main.js"></script>
+</html>
