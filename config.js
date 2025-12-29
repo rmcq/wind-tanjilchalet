@@ -378,6 +378,4 @@ export const DEFAULT_ACTIVE_CLUBS = [
         'D', '3W', '5H', '4', '5', '6', '7', '8', '9', 'PW', '50°', '56°', '60°'
     ];
 
-export const MAX_ACTIVE_CLUBS = 13;
-
 // End of config.js
