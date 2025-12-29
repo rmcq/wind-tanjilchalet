@@ -6657,61 +6657,6 @@ function exportAllPresetsToCSV() {
 }
 
 /**
- * NEW: Exports all club presets to a single CSV file.
- */
-function exportAllPresetsToCSV() {
-    // 1. Define the order of clubs and components
-    const clubOrder = Array.from(document.querySelectorAll('#club-slim-buttons .club-btn')).map(btn => btn.dataset.club);
-    const componentMap = {
-        'Headwind': 'hw',
-        'Tailwind': 'tw',
-        'Assist Crosswind': 'acw',
-        'Opposed Crosswind': 'ocw'
-    };
-    const componentOrder = ['Headwind', 'Tailwind', 'Assist Crosswind', 'Opposed Crosswind'];
-
-    // 2. Build the CSV content
-    let csvContent = "data:text/csv;charset=utf-8,";
-
-    // Header Row: Blank cell + all club names
-    const header = ['"Wind Condition"', ...clubOrder.map(club => `"${club}"`)].join(',');
-    csvContent += header + '\r\n';
-
-    // 3. Iterate through each wind category and component to build rows
-    WIND_CATEGORIES_ORDER.forEach(categoryKey => {
-        const categoryLabel = WIND_CATEGORIES_MAP[categoryKey].label.replace(/ \(.+\)/, '');
-
-        // Add a separator row for the wind category
-        csvContent += `"${categoryLabel} Wind"\r\n`;
-
-        componentOrder.forEach(componentName => {
-            const componentKey = componentMap[componentName];
-            const rowData = [componentName]; // First column is the component name
-
-            clubOrder.forEach(clubKey => {
-                // Get the multiplier value, using default if club doesn't exist (safety)
-                const value = clubPresets[clubKey]?.windCategories[categoryKey]?.[componentKey] ?? 'N/A';
-                rowData.push(value.toFixed(2));
-            });
-
-            csvContent += `"${rowData.join('","')}"\r\n`;
-        });
-
-        // Add a blank line between wind categories for readability
-        csvContent += '\r\n';
-    });
-
-    // 4. Create and trigger the download
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "all_club_multipliers.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-/**
  * NEW: Makes a multiplier value span editable on click.
  * @param {HTMLElement} valueSpan - The span element displaying the value.
  * @param {HTMLElement} slider - The corresponding range slider element.
