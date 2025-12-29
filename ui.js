@@ -5580,7 +5580,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (powerPercentDisplay) {
         powerPercentDisplay.addEventListener('click', () => makePowerEditable(powerPercentDisplay));
     }
-});
 
 // --- NEW: STOPWATCH LOGIC ---
 const stopwatchDisplay = document.getElementById('stopwatchDisplay');
@@ -7186,4 +7185,6 @@ async function exportHistoryData() {
         alert("An error occurred while creating the ZIP file. See console for details.");
     }
 }
+
+}); // End of DOMContentLoaded
 
