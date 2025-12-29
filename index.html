@@ -1672,5 +1672,19 @@
     </div>
 
     <!-- NEW: Notes Modal -->
+    <div id="notesModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4 md:p-8">
+        <div class="bg-card-bg rounded-xl shadow-2xl w-full h-full flex flex-col border border-gray-600">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h3 class="text-lg font-bold text-white">Session Notes</h3>
+                <button id="closeNotesModalButton" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+            </div>
+            <div id="notesModalContent" class="p-4 flex-grow flex flex-col">
+                <textarea id="sessionNotesTextarea"
+                          class="w-full h-full flex-grow bg-gray-800 text-gray-200 p-3 rounded-lg border border-gray-600 focus:border-bunker-yellow focus:ring-0 resize-none"
+                          placeholder="Type your notes here... they will be saved automatically."></textarea>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="main.js"></script>
 </html>
