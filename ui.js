@@ -195,7 +195,42 @@ function formatAimAdjustment(aimAdjustment) {
 }
 
 /**
- * Finds other club keys that have the exact same set of ACTIVE wind multipliers 
+ * Checks if any multiplier slider values differ from the saved preset and shows/hides the save button.
+ */
+function checkMultiplierChanges() {
+    if (safetyLockActive || analysisLockActive) return;
+
+    const windSpeed = parseFloat(windSpeedSlider.value) || 0;
+    const category = getWindCategory(windSpeed);
+    const clubKey = activeClubKey;
+    const manualChangesControlContainer = document.getElementById('manualChangesControlContainer');
+
+    if (!clubPresets[clubKey] || !clubPresets[clubKey].windCategories[category]) {
+        manualChangesControlContainer.classList.add('hidden');
+        return;
+    }
+
+    const savedPreset = clubPresets[clubKey].windCategories[category];
+
+    const isHwChanged = Math.abs((parseFloat(headwindSlider.value) / 100) - savedPreset.hw) > 0.001;
+    const isTwChanged = Math.abs((parseFloat(tailwindSlider.value) / 100) - savedPreset.tw) > 0.001;
+
+    // Handle bias-aware checking for crosswind
+    const isAcwChanged = shotBias === 'fade' ? Math.abs((parseFloat(assistCrosswindSlider.value) / 100) - savedPreset.acw) > 0.001 : Math.abs((parseFloat(opposedCrosswindSlider.value) / 100) - savedPreset.acw) > 0.001;
+    const isOcwChanged = shotBias === 'fade' ? Math.abs((parseFloat(opposedCrosswindSlider.value) / 100) - savedPreset.ocw) > 0.001 : Math.abs((parseFloat(assistCrosswindSlider.value) / 100) - savedPreset.ocw) > 0.001;
+
+    const revertBtn = document.getElementById('revertManualMultiplierChanges');
+    const saveBtn = document.getElementById('saveManualMultiplierChanges');
+
+    if (isHwChanged || isTwChanged || isAcwChanged || isOcwChanged) {
+        [revertBtn, saveBtn].forEach(btn => { btn.disabled = false; btn.classList.remove('opacity-50', 'cursor-not-allowed'); });
+    } else {
+        [revertBtn, saveBtn].forEach(btn => { btn.disabled = true; btn.classList.add('opacity-50', 'cursor-not-allowed'); });
+    }
+}
+
+/**
+ * Finds other club keys that have the exact same set of ACTIVE wind multipliers
  * for the current wind speed category.
  */
 function findEquivalentClubs(activeKey, windSpeed, distanceWindSpeed, aimWindDirectionComponent) {
@@ -6546,41 +6581,6 @@ document.getElementById('liePolarityToggle')?.addEventListener('click', () => {
         // If the stopwatch is running, stop it to prevent confusion
         if (stopwatchRunning) { stopStopwatch(); }
 });
-
-/**
- * NEW: Checks if any multiplier slider values differ from the saved preset and shows/hides the save button.
- */
-function checkMultiplierChanges() {
-    if (safetyLockActive || analysisLockActive) return;
-
-    const windSpeed = parseFloat(windSpeedSlider.value) || 0;
-    const category = getWindCategory(windSpeed);
-    const clubKey = activeClubKey;
-    const manualChangesControlContainer = document.getElementById('manualChangesControlContainer');
-
-    if (!clubPresets[clubKey] || !clubPresets[clubKey].windCategories[category]) {
-        manualChangesControlContainer.classList.add('hidden');
-        return;
-    }
-
-    const savedPreset = clubPresets[clubKey].windCategories[category];
-
-    const isHwChanged = Math.abs((parseFloat(headwindSlider.value) / 100) - savedPreset.hw) > 0.001;
-    const isTwChanged = Math.abs((parseFloat(tailwindSlider.value) / 100) - savedPreset.tw) > 0.001;
-
-    // Handle bias-aware checking for crosswind
-    const isAcwChanged = shotBias === 'fade' ? Math.abs((parseFloat(assistCrosswindSlider.value) / 100) - savedPreset.acw) > 0.001 : Math.abs((parseFloat(opposedCrosswindSlider.value) / 100) - savedPreset.acw) > 0.001;
-    const isOcwChanged = shotBias === 'fade' ? Math.abs((parseFloat(opposedCrosswindSlider.value) / 100) - savedPreset.ocw) > 0.001 : Math.abs((parseFloat(assistCrosswindSlider.value) / 100) - savedPreset.ocw) > 0.001;
-
-    const revertBtn = document.getElementById('revertManualMultiplierChanges');
-    const saveBtn = document.getElementById('saveManualMultiplierChanges');
-
-    if (isHwChanged || isTwChanged || isAcwChanged || isOcwChanged) {
-        [revertBtn, saveBtn].forEach(btn => { btn.disabled = false; btn.classList.remove('opacity-50', 'cursor-not-allowed'); });
-    } else {
-        [revertBtn, saveBtn].forEach(btn => { btn.disabled = true; btn.classList.add('opacity-50', 'cursor-not-allowed'); });
-    }
-}
 
 /**
  * NEW: Shows a temporary confirmation message in the analysis panel.
