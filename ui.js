@@ -5542,6 +5542,17 @@ document.addEventListener('DOMContentLoaded', () => {
     updateLieDisplay(uphillDownhillLieSlider, uphillDownhillLieDisplay, uphillDownhillLieValueDisplay);
     updateLieDisplay(feetLieSlider, feetLieDisplay, feetLieValueDisplay);
 
+    // --- NEW: STOPWATCH DOM ELEMENTS (must be declared before updateStopwatchUIForMode call) ---
+    const stopwatchDisplay = document.getElementById('stopwatchDisplay');
+    const stopwatchStartStopBtn = document.getElementById('stopwatchStartStop');
+    const stopwatchCups = document.getElementById('stopwatchCups');
+    const stopwatchHalveBtn = document.getElementById('stopwatchHalveBtn');
+    const stopwatchResultContainer = document.getElementById('stopwatchResultContainer');
+    const stopwatchAddBtn = document.getElementById('stopwatchAddBtn');
+    const stopwatchClearTotalBtn = document.getElementById('stopwatchClearTotal');
+    const stopwatchManualAddBtn = document.getElementById('stopwatchManualAddBtn');
+    const stopwatchManualSubtractBtn = document.getElementById('stopwatchManualSubtractBtn');
+
     updateStopwatchUIForMode(); // NEW: Set initial stopwatch UI
     // NEW: Listeners to remove the 'reset-confirmed' state when sliders are adjusted
     const slidersToMonitor = [elevationSlider, uphillDownhillLieSlider, feetLieSlider];
@@ -5581,16 +5592,7 @@ document.addEventListener('DOMContentLoaded', () => {
         powerPercentDisplay.addEventListener('click', () => makePowerEditable(powerPercentDisplay));
     }
 
-// --- NEW: STOPWATCH LOGIC ---
-const stopwatchDisplay = document.getElementById('stopwatchDisplay');
-const stopwatchStartStopBtn = document.getElementById('stopwatchStartStop');
-const stopwatchCups = document.getElementById('stopwatchCups');
-const stopwatchHalveBtn = document.getElementById('stopwatchHalveBtn'); // NEW
-const stopwatchResultContainer = document.getElementById('stopwatchResultContainer'); // NEW
-const stopwatchAddBtn = document.getElementById('stopwatchAddBtn'); // NEW
-const stopwatchClearTotalBtn = document.getElementById('stopwatchClearTotal'); // NEW
-const stopwatchManualAddBtn = document.getElementById('stopwatchManualAddBtn'); // NEW
-const stopwatchManualSubtractBtn = document.getElementById('stopwatchManualSubtractBtn'); // NEW    
+// --- STOPWATCH FUNCTIONS ---
 
 /**
  * NEW: Plays a short beep sound for UI feedback.
