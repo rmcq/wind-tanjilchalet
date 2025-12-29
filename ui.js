@@ -4151,8 +4151,9 @@ function getPerformanceChartOptions(updateDayIndices, dateLabels, shotCounts) {
                 callbacks: {
                     title: function(tooltipItems) {
                         const index = tooltipItems[0].dataIndex;
-                        // REVERTED: Show the actual date from the dateLabels array in the tooltip title
-                        const dateString = dateFns.format(dateFns.parseISO(dateLabels[index]), 'MMM d, yyyy');
+                        // Show the actual date from the dateLabels array in the tooltip title
+                        const date = new Date(dateLabels[index]);
+                        const dateString = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                         // Add the session number to the tooltip title for clarity
                         return `Session ${tooltipItems[0].label}: ${dateString}`;
                     },
