@@ -84,12 +84,7 @@ export const defaultRollSettings = {
         windRollSensitivity: 40
     };
 export const greenFirmnessOrder = ['very_soft', 'soft', 'moderate', 'firm', 'very_firm', 'extremely_firm', 'ultra_firm'];
-export const defaultRollSettings = {
-        greenSpeed: 151,
-        headwindRollPercent: 35,
-        tailwindRollPercent: 25,
-        windRollSensitivity: 40
-    };
+
     // NEW: Default settings for cup arrow suggestions
 export const defaultCupSuggestionSettings = {
         confidenceThreshold: 75,
